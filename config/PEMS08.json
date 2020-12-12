@@ -1,7 +1,7 @@
 {
 	"lr": 0.001,
-	"epochs": 1,
-	"batch_size": 48,
+	"epochs": 50,
+	"batch_size": 64,
 	"adj_file": "data/pems08/distance.csv",
 	"data_file": "data/pems08/pems08.npz",
 	"out_dir": "out/pems08",

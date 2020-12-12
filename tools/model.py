@@ -17,11 +17,11 @@ def make_msgat(in_timesteps, out_timesteps, n_nodes, adj, device):
             },
         ]
     }] * 5
-    model = MSGCN(layers=layers, adj=adj, n_nodes=n_nodes,
+    msgat = MSGCN(layers=layers, adj=adj, n_nodes=n_nodes,
                   in_timesteps=in_timesteps, out_timesteps=out_timesteps).to(device)
-    for param in model.parameters():
+    for param in msgat.parameters():
         if param.ndim >= 2:
             init.xavier_normal_(param)
         else:
             init.uniform_(param)
-    return model
+    return msgat
