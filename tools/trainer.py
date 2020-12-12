@@ -17,11 +17,11 @@ class Trainer:
                  device_for_data: str = 'cpu', device_for_model: str = 'cpu'):
         print('Loading...')
         # load data
-        Adj = load_adj_matrix(adj_file, n_nodes, device_for_model)
+        adj = load_adj_matrix(adj_file, n_nodes, device_for_model)
         loaders, statistics = load_data(data_file, batch_size, data_split, points_per_hour, device_for_data)
         self.t_loader, self.v_loader = loaders
         # create mdoel
-        self.net = make_msgat(points_per_hour, points_per_hour, n_nodes, Adj, device_for_model)
+        self.net = make_msgat(points_per_hour, points_per_hour, n_nodes, adj, device_for_model)
         self.optimizer = Adam(self.net.parameters(), lr=lr)
         self.criterion = MSELoss().to(device_for_model)
         self.out_dir = make_out_dir(out_dir)
