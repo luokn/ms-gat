@@ -7,6 +7,6 @@
 	"out_dir": "out/pems04",
 	"n_nodes": 307,
 	"points_per_hour": 12,
-	"device_for_data": "cpu",
+	"device_for_data": "cuda:0",
 	"device_for_model": "cuda:0"
 }
