@@ -179,9 +179,9 @@ class MSGCNLayer(Module):
         Returns:
             [FloatTensor]: shape is [batch_size, n_nodes, out_timesteps]
         """
-        x = self.seq(x)  # -> [batch_size, out_channels, n_nodes, in_timesteps]
-        x = self.fc(x.transpose(1, 3))  # -> [batch_size, out_timesteps, n_nodes, 1]
-        return x[..., 0].transpose(1, 2)  # -> [batch_size, n_nodes, out_timesteps]
+        out = self.seq(x)  # -> [batch_size, out_channels, n_nodes, in_timesteps]
+        out = self.fc(out.transpose(1, 3))  # -> [batch_size, out_timesteps, n_nodes, 1]
+        return out[..., 0].transpose(1, 2)  # -> [batch_size, n_nodes, out_timesteps]
 
 
 class MSGCN(Module):
