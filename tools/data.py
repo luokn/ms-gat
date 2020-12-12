@@ -22,16 +22,18 @@ def normalize_dataset(x: torch.Tensor, split):
     return dict(std=std, mean=mean)
 
 
-def load_data(data_file, batch_size, data_split, points_per_hour, device='cpu'):
+def load_data(data_file, batch_size, points_per_hour, device='cpu'):
     data = torch.from_numpy(numpy.load(data_file)['data'])
     data = data.transpose(1, 2).float().to(device)
     X, H, D, Y = generate_datasets(data, points_per_hour, [1, 2, 3, 24, 7 * 24])
-    split = int(len(Y) * data_split)
-    statistics = normalize_dataset(X, split)
-    dataset1 = TensorDataset(X[:split], H[:split], D[:split], Y[:split])
-    dataset2 = TensorDataset(X[split:], H[split:], D[split:], Y[split:])
+    split0, split1 = int(X.size(0) * .6), int(X.size(0) * .8)
+    statistics = normalize_dataset(X, split0)
+    dataset1 = TensorDataset(X[:split0], H[:split0], D[:split0], Y[:split0])
+    dataset2 = TensorDataset(X[split0:split1], H[split0:split1], D[split0:split1], Y[split0:split1])
+    dataset3 = TensorDataset(X[split1:], H[split1:], D[split1:], Y[split1:])
     data_loaders = [
         DataLoader(dataset1, batch_size=batch_size, shuffle=True),
-        DataLoader(dataset2, batch_size=batch_size, shuffle=True)
+        DataLoader(dataset2, batch_size=batch_size, shuffle=True),
+        DataLoader(dataset3, batch_size=batch_size, shuffle=True)
     ]
     return data_loaders, statistics

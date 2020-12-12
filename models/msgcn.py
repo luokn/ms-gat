@@ -20,8 +20,8 @@ class GAttention(Module):
         """
         # k_{n,t} = q_{n,t} = x_{i,n,t} \alpha_{i}
         k = q = torch.einsum('bint,i->bnt', x, self.alpha)  # -> [batch_size, n_nodes, in_timesteps]
-        Att = torch.softmax(k @ self.W @ q.transpose(1, 2), dim=-1)  # -> [batch_size, n_nodes, n_nodes]
-        return Att * self.Adj  # -> [batch_size, n_nodes, n_nodes]
+        att = torch.softmax(k @ self.W @ q.transpose(1, 2), dim=-1)  # -> [batch_size, n_nodes, n_nodes]
+        return att * self.adj  # -> [batch_size, n_nodes, n_nodes]
 
 
 class GACN(Module):
