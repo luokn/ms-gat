@@ -135,7 +135,7 @@ class CACN(Module):
             FloatTensor: shape is [batch_size, out_channels, n_nodes, in_timesteps]
         """
         out = self.catt(x)  # -> [batch_size, in_channels, n_nodes, in_timesteps]
-        return self.conv(out) if self.conv else out  # ->  [batch_size, out_channels, n_nodes, in_timesteps]
+        return self.conv(out) if self.conv else out  # -> [batch_size, out_channels, n_nodes, in_timesteps]
 
 
 class TGACN(Module):
@@ -155,12 +155,12 @@ class TGACN(Module):
             x (FloatTensor): shape is [batch_size, in_channels, n_nodes, in_timesteps]
 
         Returns:
-            [FloatTensor]: shape is [batch_size, n_nodes, out_timesteps]
+            [FloatTensor]: shape is [batch_size, out_channels, n_nodes, out_timesteps]
         """
         out = self.ln(x)  # -> [batch_size, in_channels, n_nodes, in_timesteps]
         # -> [batch_size, out_channels, n_nodes, in_timesteps]
         out = torch.cat([f(out) for f in self.acns], dim=1) + self.res(x)
-        return torch.relu(out)  # -> [batch_size, n_nodes, in_timesteps]
+        return torch.relu(out)  # -> [batch_size, out_channels, n_nodes, in_timesteps]
 
 
 class MSGCNLayer(Module):
