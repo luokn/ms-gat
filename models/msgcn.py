@@ -4,9 +4,9 @@ from torch.nn import Conv2d, Embedding, LayerNorm, Module, ModuleList, Parameter
 
 
 class GAttention(Module):
-    def __init__(self, n_channels, in_timesteps, Adj):
+    def __init__(self, n_channels, in_timesteps, adj):
         super(GAttention, self).__init__()
-        self.Adj = Adj
+        self.adj = adj
         self.W = Parameter(torch.zeros(in_timesteps, in_timesteps), requires_grad=True)
         self.alpha = Parameter(torch.zeros(n_channels), requires_grad=True)
 
@@ -25,10 +25,10 @@ class GAttention(Module):
 
 
 class GACN(Module):
-    def __init__(self, in_channels, out_channels, in_timesteps, Adj):
+    def __init__(self, in_channels, out_channels, in_timesteps, adj):
         super(GACN, self).__init__()
-        self.gatt = GAttention(n_channels=in_channels, in_timesteps=in_timesteps, Adj=Adj)
-        self.W = Parameter(torch.zeros(out_channels, in_channels), requires_grad=True)  # [C_o, C_i]
+        self.gatt = GAttention(n_channels=in_channels, in_timesteps=in_timesteps, adj=adj)
+        self.W = Parameter(torch.zeros(out_channels, in_channels), requires_grad=True)
 
     def forward(self, x: FloatTensor) -> FloatTensor:
         """
@@ -61,10 +61,10 @@ class TAttention(Module):
         """
         # k_{t,n} = q_{t,n} = x_{i,n,t} \alpha_{i}
         k = q = torch.einsum('bint,i->btn', x, self.alpha)  # -> [batch_size, in_timesteps, n_nodes]
-        Att = torch.softmax((k @ self.W1.T) @ (q @ self.W2.T).transpose(1, 2),
+        att = torch.softmax((k @ self.W1.T) @ (q @ self.W2.T).transpose(1, 2),
                             dim=-1)  # -> [batch_size, in_timesteps, in_timesteps]
         # y_{c,n,t} = a_{t,i} x_{c,n,i}
-        return torch.einsum('bti,bcni->bcnt', Att, x)  # -> [batch_size, in_channels, n_nodes, in_timesteps]
+        return torch.einsum('bti,bcni->bcnt', att, x)  # -> [batch_size, in_channels, n_nodes, in_timesteps]
 
 
 class Chomp(Module):
@@ -124,7 +124,7 @@ class CACN(Module):
     def __init__(self, in_channels, out_channels, in_timesteps, n_nodes):
         super(CACN, self).__init__()
         self.catt = CAttention(n_nodes, in_timesteps)
-        self.conv = Conv2d(in_channels, out_channels, kernel_size=1) if in_channels != out_channels else None
+        self.conv = Conv2d(in_channels, out_channels, 1)
 
     def forward(self, x: FloatTensor) -> FloatTensor:
         """
@@ -135,7 +135,7 @@ class CACN(Module):
             FloatTensor: shape is [batch_size, out_channels, n_nodes, in_timesteps]
         """
         out = self.catt(x)  # -> [batch_size, in_channels, n_nodes, in_timesteps]
-        return self.conv(out) if self.conv else out  # -> [batch_size, out_channels, n_nodes, in_timesteps]
+        return self.conv(out)  # -> [batch_size, out_channels, n_nodes, in_timesteps]
 
 
 class TGACN(Module):
@@ -144,7 +144,7 @@ class TGACN(Module):
         self.ln = LayerNorm([in_timesteps])
         self.acns = ModuleList([
             CACN(in_channels, out_channels // 3, in_timesteps, n_nodes),
-            GACN(in_channels, out_channels // 3, in_timesteps, kwargs['Adj']),
+            GACN(in_channels, out_channels // 3, in_timesteps, kwargs['adj']),
             TACN(in_channels, out_channels // 3, tcn_dilations, n_nodes)
         ])
         self.res = Conv2d(in_channels, out_channels, kernel_size=1)
