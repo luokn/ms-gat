@@ -31,8 +31,8 @@ class Trainer:
         torch.save(statistics, f'{self.out_dir}/statistics.pth')
 
     def run(self):
-        print('Training...')
         # train
+        print('Training...')
         best = float('inf')
         history = []
         for epoch in range(self.epochs):
@@ -44,6 +44,7 @@ class Trainer:
                 torch.save(self.net.state_dict(), f'{self.out_dir}/MAE={best:.2f}.pkl')
             history.append(dict(loss_t=loss_t, loss_v=loss_v, MAE=MAE, RMSE=RMSE))
         # test
+        print("Testing...")
         self.net.load_state_dict(torch.load(f'{self.out_dir}/MAE={best:.2f}.pkl'))
         MAE, RMSE = self.test()
         history.append(dict(MAE=MAE, RMSE=RMSE))
