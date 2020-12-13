@@ -15,7 +15,7 @@ class ProgressBar:
         t_delta = timedelta(seconds=int(time() - self.t_start))
         circles = '●' * (self.n_circles * self.phase // self.total)
         circles = circles.ljust(self.n_circles, '○')
-        line = f'\r[32m[{circles}] [{self.phase}/{self.total} {t_delta}] {postfix}'
+        line = f'\r[{circles}] [{self.phase}/{self.total} {t_delta}] {postfix}'
         if self.line_len > len(line):
             line = line.ljust(self.line_len)
         self.line_len = len(line)
