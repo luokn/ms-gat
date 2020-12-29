@@ -1,4 +1,4 @@
-from models.msgcn import MSGCN
+from models.msgcn_no_att import MSGCN
 from torch.nn import init
 
 

@@ -1,22 +1,36 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+from time import time
 
-import torch
 
+class ProgressBar:
+    def __init__(self, total: int, n_circles=50):
+        self.phase = 0
+        self.total = total
+        self.n_circles = n_circles
+        self.t_start = time()
+        self.line_len = -1
 
-def load_adj_matrix(adj_file, n_nodes, device='cuda:0'):
-    r"""
-    .. math:: 
-        \tilde A = \tilde{D}^{-1/2} (A + I_n) \tilde{D}^{-1/2}
-    """
-    A = torch.eye(n_nodes, device=device)
-    for ln in open(adj_file, 'r').readlines()[1:]:
-        i, j, _ = ln.split(',')
-        i, j = int(i), int(j)
-        A[i, j] = A[j, i] = 1
+    def update(self, postfix='', n=1):
+        self.phase += n
+        t_delta = timedelta(seconds=int(time() - self.t_start))
+        circles = '●' * (self.n_circles * self.phase // self.total)
+        circles = circles.ljust(self.n_circles, '○')
+        line = f'\r[{circles}] [{self.phase}/{self.total} {t_delta}] {postfix}'
+        if self.line_len > len(line):
+            line = line.ljust(self.line_len)
+        self.line_len = len(line)
+        print(line, end='')
 
-    D_rsqrt = A.sum(dim=1).rsqrt().diag()
-    return D_rsqrt @ A @ D_rsqrt
+    def close(self):
+        self.phase, self.line_len = 0, -1
+        print('')
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
 
 
 def make_out_dir(out_dir):
