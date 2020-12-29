@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -23,18 +23,33 @@ def normalize_dataset(x: torch.Tensor, split):
 
 
 def load_data(data_file, batch_size, points_per_hour, device='cpu'):
-    data = torch.from_numpy(numpy.load(data_file)['data'])
+    data = torch.from_numpy(np.load(data_file)['data'])
     data = data.transpose(1, 2).float().to(device)
     X, H, D, Y = generate_datasets(data, points_per_hour, [1, 2, 3, 24, 7 * 24])
-    split0, split1 = int(X.size(0) * .6), int(X.size(0) * .8)
-    statistics = normalize_dataset(X, split0)
+    t_split, v_split = int(X.size(0) * .6), int(X.size(0) * .8)
+    statistics = normalize_dataset(X, t_split)
     datasets = [
         # train
-        TensorDataset(X[:split0], H[:split0], D[:split0], Y[:split0]),
+        TensorDataset(X[:t_split], H[:t_split], D[:t_split], Y[:t_split]),
         # validate
-        TensorDataset(X[split0:split1], H[split0:split1], D[split0:split1], Y[split0:split1]),
+        TensorDataset(X[t_split:v_split], H[t_split:v_split], D[t_split:v_split], Y[t_split:v_split]),
         # test
-        TensorDataset(X[split1:], H[split1:], D[split1:], Y[split1:])
+        TensorDataset(X[v_split:], H[v_split:], D[v_split:], Y[v_split:])
     ]
     data_loaders = [DataLoader(dataset, batch_size, shuffle=True) for dataset in datasets]
     return data_loaders, statistics
+
+
+def load_adj(adj_file, n_nodes, device='cpu'):
+    r"""
+    .. math:: 
+        \tilde A = \tilde{D}^{-1/2} (A + I_n) \tilde{D}^{-1/2}
+    """
+    A = torch.eye(n_nodes, device=device)
+    for ln in open(adj_file, 'r').readlines()[1:]:
+        i, j, _ = ln.split(',')
+        i, j = int(i), int(j)
+        A[i, j] = A[j, i] = 1
+
+    D_rsqrt = A.sum(dim=1).rsqrt().diag()
+    return D_rsqrt @ A @ D_rsqrt

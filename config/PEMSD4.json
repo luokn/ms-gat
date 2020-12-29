@@ -1,0 +1,12 @@
+{
+	"lr": 0.001,
+	"epochs": 80,
+	"batch_size": 32,
+	"adj_file": "data/pemsd4/distance.csv",
+	"data_file": "data/pemsd4/pemsd4.npz",
+	"out_dir": "out/pemsd4",
+	"n_nodes": 307,
+	"points_per_hour": 12,
+	"device_for_data": "cuda:3",
+	"device_for_model": "cuda:3"
+}

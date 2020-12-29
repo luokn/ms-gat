@@ -2,13 +2,13 @@ from functools import partial
 from json import dumps
 
 import torch
-from tools.data import load_data
-from tools.metrics import Metrics
-from tools.model import make_msgat
-from tools.progress import ProgressBar
-from tools.utils import load_adj_matrix, log_to_file, make_out_dir
 from torch.nn import MSELoss
 from torch.optim import Adam
+
+from tools.data import load_adj, load_data
+from tools.metrics import Metrics
+from tools.model import make_msgat
+from tools.utils import ProgressBar, log_to_file, make_out_dir
 
 
 class Trainer:
@@ -16,7 +16,7 @@ class Trainer:
                  n_nodes: int,  points_per_hour: int, device_for_data: str = 'cpu', device_for_model: str = 'cpu'):
         print('Loading...')
         # load data
-        adj = load_adj_matrix(adj_file, n_nodes, device_for_model)
+        adj = load_adj(adj_file, n_nodes, device_for_model)
         loaders, statistics = load_data(data_file, batch_size, points_per_hour, device_for_data)
         self.training_loader, self.validation_loader, self.test_loader = loaders
         # create mdoel
