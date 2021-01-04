@@ -1,18 +1,19 @@
-import torch
+from torch import FloatTensor
 
 
 class Metrics:
     def __init__(self):
-        self.count = 0
-        self.AE, self.SE, = .0, .0
+        self.n = 0
+        self.AE, self.SE = .0, .0
         self.MAE, self.RMSE = .0, .0
 
-    def update(self, pred, y):
-        self.count += pred.nelement()
-        self.AE += torch.abs(pred - y).sum().item()
-        self.SE += torch.pow(pred - y, 2).sum().item()
-        self.MAE = self.AE / self.count
-        self.RMSE = (self.SE / self.count) ** .5
+    def update(self, pred: FloatTensor, y: FloatTensor):
+        self.n += pred.nelement()
+        self.AE += (pred - y).abs().sum().item()
+        self.SE += (pred - y).square().sum().item()
+        self.MAE = self.AE / self.n
+        self.RMSE = (self.SE / self.n) ** .5
 
     def clear(self):
-        self.AE, self.SE, self.count = .0, .0, 0
+        self.n = 0
+        self.AE, self.SE = .0, .0
