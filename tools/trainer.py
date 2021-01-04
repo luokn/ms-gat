@@ -2,17 +2,17 @@ from functools import partial
 from json import dumps
 
 import torch
-from torch.nn import MSELoss
 from torch.optim import Adam
 
 from tools.data import load_adj, load_data
+from tools.loss import HuberLoss
 from tools.metrics import Metrics
 from tools.model import make_msgat
 from tools.utils import ProgressBar, log_to_file, make_out_dir
 
 
 class Trainer:
-    def __init__(self, *, lr: float, epochs: int, batch_size: int, adj_file: str, data_file: str, out_dir: str,
+    def __init__(self, *, lr: float, epochs: int, batch_size: int, delta: float, adj_file: str, data_file: str, out_dir: str,
                  n_nodes: int,  points_per_hour: int, device_for_data: str = 'cpu', device_for_model: str = 'cpu'):
         print('Loading...')
         # load data
@@ -22,7 +22,7 @@ class Trainer:
         # create mdoel
         self.net = make_msgat(points_per_hour, points_per_hour, n_nodes, adj, device_for_model)
         self.optimizer = Adam(self.net.parameters(), lr=lr)
-        self.criterion = MSELoss().to(device_for_model)
+        self.criterion = HuberLoss(delta).to(device_for_model)
         self.out_dir = make_out_dir(out_dir)
         self.training_log = partial(log_to_file, f'{self.out_dir}/training.log')
         self.validation_log = partial(log_to_file, f'{self.out_dir}/validation.log')
