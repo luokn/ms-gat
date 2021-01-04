@@ -1,0 +1,13 @@
+{
+	"lr": 0.001,
+	"delta": 30,
+	"epochs": 50,
+	"batch_size": 64,
+	"n_nodes": 170,
+	"points_per_hour": 12,
+	"device_for_data": "cuda:0",
+	"device_for_model": "cuda:0",
+	"adj_file": "data/pemsd8/pemsd8.csv",
+	"data_file": "data/pemsd8/pemsd8.npz",
+	"out_dir": "out/pemsd8"
+}
