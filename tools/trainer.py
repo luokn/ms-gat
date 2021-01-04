@@ -12,8 +12,18 @@ from tools.utils import ProgressBar, log_to_file, make_out_dir
 
 
 class Trainer:
-    def __init__(self, *, lr: float, epochs: int, batch_size: int, delta: float, adj_file: str, data_file: str, out_dir: str,
-                 n_nodes: int,  points_per_hour: int, device_for_data: str = 'cpu', device_for_model: str = 'cpu'):
+    def __init__(self, *,
+                 lr: float,
+                 delta: float,
+                 epochs: int,
+                 batch_size: int,
+                 n_nodes: int,
+                 points_per_hour: int,
+                 device_for_data: str,
+                 device_for_model: str,
+                 adj_file: str,
+                 data_file: str,
+                 out_dir: str,):
         print('Loading...')
         # load data
         adj = load_adj(adj_file, n_nodes, device_for_model)

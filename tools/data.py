@@ -1,9 +1,10 @@
 import numpy as np
 import torch
+from torch import FloatTensor
 from torch.utils.data import DataLoader, TensorDataset
 
 
-def generate_datasets(data: torch.Tensor, points_per_hour, offset_hours):
+def generate_datasets(data: FloatTensor, points_per_hour, offset_hours):
     steps = [hour * points_per_hour for hour in offset_hours]
     step_max = max(steps)
     X = torch.stack([
@@ -15,14 +16,14 @@ def generate_datasets(data: torch.Tensor, points_per_hour, offset_hours):
     return X, H, D, Y
 
 
-def normalize_dataset(x: torch.Tensor, split):
+def normalize_dataset(x: FloatTensor, split):
     std, mean = torch.std_mean(x[:split], dim=0, keepdim=True)
     x -= mean
     x /= std
     return dict(std=std, mean=mean)
 
 
-def load_data(data_file, batch_size, points_per_hour, device='cpu'):
+def load_data(data_file, batch_size, points_per_hour, device):
     data = torch.from_numpy(np.load(data_file)['data'])
     data = data.transpose(1, 2).float().to(device)
     X, H, D, Y = generate_datasets(data, points_per_hour, [1, 2, 3, 24, 7 * 24])
@@ -40,7 +41,7 @@ def load_data(data_file, batch_size, points_per_hour, device='cpu'):
     return data_loaders, statistics
 
 
-def load_adj(adj_file, n_nodes, device='cpu'):
+def load_adj(adj_file, n_nodes, device):
     r"""
     .. math:: 
         \tilde A = \tilde{D}^{-1/2} (A + I_n) \tilde{D}^{-1/2}
