@@ -48,10 +48,14 @@ if __name__ == '__main__':
     # adjacency matrix
     adj = load_adj(args.adj, args.nodes)
     # data loaders
-    data_loaders = load_data(args.data, frequency=args.frequency, out_timesteps=args.out_timesteps,
-                             hours=[int(h) for h in args.hours.split(',')], batch_size=args.batch, num_workers=args.workers, pin_memory=True)
+    data_loaders = load_data(args.data,
+                             frequency=args.frequency,
+                             out_timesteps=args.out_timesteps,
+                             hours=[int(h) for h in args.hours.split(',')],
+                             batch_size=args.batch, num_workers=args.workers, pin_memory=True)
     # network
-    net = msgat(args.components, args.channels, args.in_timesteps, args.out_timesteps, args.nodes, adj)
+    net = msgat(args.components, in_channels=args.channels, in_timesteps=args.in_timesteps,
+                out_timesteps=args.out_timesteps, adj=adj, te=not args.no_te)
     net = nn.DataParallel(net).cuda() if args.gpus else net.cuda(args.gpu)
     net = init_network(net)
     # optimizer
