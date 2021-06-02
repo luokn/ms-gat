@@ -17,7 +17,7 @@
 # PEMSD3
 python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv --checkpoints checkpoints/pemsd3 --nodes 358 --channels 1 --batch 32 --out-timesteps 12 --workers 4 --gpu 0
 # PEMSD4
-python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv  --checkpoints checkpoints/pemsd4 --nodes 307 --channels 3 --batch 64 --out-timesteps 12 --workers 4 --gpu 0
+python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv --checkpoints checkpoints/pemsd4 --nodes 307 --channels 3 --batch 64 --out-timesteps 12 --workers 4 --gpu 0
 # PEMSD7
 python3 ./main.py --data data/pemsd7/pemsd7.npz --adj data/pemsd7/pemsd7.csv --checkpoints checkpoints/pemsd7 --nodes 883 --channels 1 --batch 16 --out-timesteps 12 --workers 4 --gpu 0
 # PEMSD8
