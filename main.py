@@ -14,30 +14,30 @@ from torch import nn, optim
 from lib import HuberLoss, Trainer, init_network, load_adj, load_data
 from nn import msgat
 
-parser = ArgumentParser()
+parser = ArgumentParser(description="Train MS-GAT")
 
-parser.add_argument('--data', type=str)
-parser.add_argument('--adj', type=str)
-parser.add_argument('--nodes', type=int)
-parser.add_argument('--channels', type=int)
-parser.add_argument('--checkpoints', type=str)
-parser.add_argument('--checkpoint', type=str, default=None)
+parser.add_argument('--data', type=str, help='Data file')
+parser.add_argument('--adj', type=str, help='Adjacency matrix file')
+parser.add_argument('--nodes', type=int, help='Number of nodes')
+parser.add_argument('--channels', type=int, help='Number of channels')
+parser.add_argument('--checkpoints', type=str, help='Checkpoints path')
+parser.add_argument('--checkpoint', type=str, default=None, help='Checkpoint name')
 
-parser.add_argument('--batch', type=int, default=64)
-parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--lr', type=float, default=1e-3)
-parser.add_argument('--workers', type=int, default=0)
-parser.add_argument('--gpu', type=int, default=None)
-parser.add_argument('--gpus', type=str, default=None)
+parser.add_argument('--batch', type=int, default=64, help='Batch size')
+parser.add_argument('--lr', type=float, default=1e-3, help='Learn rate')
+parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
+parser.add_argument('--workers', type=int, default=0, help='Number of data loader workers')
+parser.add_argument('--gpu', type=int, default=None, help='GPU')
+parser.add_argument('--gpus', type=str, default=None, help='GPUs')
 
-parser.add_argument('--model', type=str, default='msgat')
-parser.add_argument('--components', type=int, default=5)
-parser.add_argument('--no-te', type=bool, default=False)
-parser.add_argument('--frequency', type=int, default=12)
-parser.add_argument('--in-timesteps', type=int, default=12)
-parser.add_argument('--out-timesteps', type=int, default=12)
-parser.add_argument('--hours', type=str, default='1,2,3,24,168')
-parser.add_argument('--delta', type=float, default=60)
+parser.add_argument('--model', type=str, default='msgat', help='Model name')
+parser.add_argument('--components', type=int, default=5, help='Number of components')
+parser.add_argument('--no-te', type=bool, default=False, help='No time embedding')
+parser.add_argument('--frequency', type=int, default=12, help='Time steps per hour')
+parser.add_argument('--in-timesteps', type=int, default=12, help='Number of input time steps')
+parser.add_argument('--out-timesteps', type=int, default=12, help='Number of output time steps')
+parser.add_argument('--hours', type=str, default='1,2,3,24,168', help='Hours of sampling')
+parser.add_argument('--delta', type=float, default=60, help='Delta of huber loss')
 
 args = parser.parse_args()
 print(args)
@@ -54,7 +54,8 @@ if __name__ == '__main__':
                              hours=[int(h) for h in args.hours.split(',')],
                              batch_size=args.batch, num_workers=args.workers, pin_memory=True)
     # network
-    net = msgat(args.components, in_channels=args.channels, in_timesteps=args.in_timesteps,
+    net = msgat(n_components=args.components,
+                in_channels=args.channels, in_timesteps=args.in_timesteps,
                 out_timesteps=args.out_timesteps, adj=adj, te=not args.no_te)
     net = nn.DataParallel(net).cuda() if args.gpus else net.cuda(args.gpu)
     net = init_network(net)
