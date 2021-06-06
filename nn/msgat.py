@@ -151,7 +151,7 @@ class MSGAT(nn.Module):
         if te:
             self.te = TE(len(components), len(adj), out_timesteps)
         else:
-            self.W = nn.Parameter(torch.zeros(len(components), len(adj), out_timesteps))
+            self.W = nn.Parameter(torch.zeros(len(components), len(adj), out_timesteps), requires_grad=True)
         self.adj = nn.Parameter(adj, requires_grad=False)
         self.tpcs = nn.ModuleList([
             TPC(component, in_timesteps=in_timesteps, out_timesteps=out_timesteps, n_nodes=len(adj))
@@ -159,7 +159,9 @@ class MSGAT(nn.Module):
         ])
 
     def forward(self, X: torch.Tensor, H: torch.Tensor, D: torch.Tensor):
-        return sum((tpc(x, self.adj) * g for tpc, x, g in zip(self.tpcs, X.unbind(1), self.te(H, D).unbind(1) if self.te else self.W.unbind(0))))
+        return sum((
+            tpc(x, self.adj) * g for tpc, x, g in zip(self.tpcs, X.unbind(1), self.te(H, D).unbind(1) if self.te else self.W.unbind(0))
+        ))
 
 
 def msgat(n_components, in_channels, in_timesteps, out_timesteps, adj, te=True):
