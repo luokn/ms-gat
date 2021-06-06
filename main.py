@@ -33,7 +33,6 @@ parser.add_argument('--gpus', type=str, default=None, help='GPUs')
 parser.add_argument('--model', type=str, default='msgat', help='Model name')
 parser.add_argument('--no-te', type=bool, default=False, help='No time embedding')
 parser.add_argument('--frequency', type=int, default=12, help='Time steps per hour')
-parser.add_argument('--in-timesteps', type=int, default=12, help='Number of input time steps')
 parser.add_argument('--out-timesteps', type=int, default=12, help='Number of output time steps')
 parser.add_argument('--hours', type=str, default='1,2,3,24,168', help='Hours of sampling')
 parser.add_argument('--delta', type=float, default=60, help='Delta of huber loss')
@@ -51,7 +50,7 @@ if __name__ == '__main__':
     data_loaders = load_data(args.data, frequency=args.frequency, hours=hours, out_timesteps=args.out_timesteps,
                              batch_size=args.batch, num_workers=args.workers, pin_memory=True)
     # network
-    net = msgat(n_components=len(hours), in_channels=args.channels, in_timesteps=args.in_timesteps,
+    net = msgat(n_components=len(hours), in_channels=args.channels, in_timesteps=args.frequency,
                 out_timesteps=args.out_timesteps, adj=adj, te=not args.no_te)
     net = nn.DataParallel(net).cuda() if args.gpus else net.cuda(args.gpu)
     net = init_network(net)
