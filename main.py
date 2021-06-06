@@ -17,7 +17,7 @@ from nn import msgat
 parser = ArgumentParser(description="Train MS-GAT")
 
 parser.add_argument('--data', type=str, help='Data file')
-parser.add_argument('--adj', type=str, help='Adjacency matrix file')
+parser.add_argument('--adj', type=str, help='Adjacency file')
 parser.add_argument('--nodes', type=int, help='Number of nodes')
 parser.add_argument('--channels', type=int, help='Number of channels')
 parser.add_argument('--checkpoints', type=str, help='Checkpoints path')
@@ -31,7 +31,6 @@ parser.add_argument('--gpu', type=int, default=None, help='GPU')
 parser.add_argument('--gpus', type=str, default=None, help='GPUs')
 
 parser.add_argument('--model', type=str, default='msgat', help='Model name')
-parser.add_argument('--components', type=int, default=5, help='Number of components')
 parser.add_argument('--no-te', type=bool, default=False, help='No time embedding')
 parser.add_argument('--frequency', type=int, default=12, help='Time steps per hour')
 parser.add_argument('--in-timesteps', type=int, default=12, help='Number of input time steps')
@@ -45,17 +44,14 @@ print(args)
 if __name__ == '__main__':
     if args.gpus:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
+    hours = [int(h) for h in args.hours.split(',')]
     # adjacency matrix
     adj = load_adj(args.adj, args.nodes)
     # data loaders
-    data_loaders = load_data(args.data,
-                             frequency=args.frequency,
-                             out_timesteps=args.out_timesteps,
-                             hours=[int(h) for h in args.hours.split(',')],
+    data_loaders = load_data(args.data, frequency=args.frequency, hours=hours, out_timesteps=args.out_timesteps,
                              batch_size=args.batch, num_workers=args.workers, pin_memory=True)
     # network
-    net = msgat(n_components=args.components,
-                in_channels=args.channels, in_timesteps=args.in_timesteps,
+    net = msgat(n_components=len(hours), in_channels=args.channels, in_timesteps=args.in_timesteps,
                 out_timesteps=args.out_timesteps, adj=adj, te=not args.no_te)
     net = nn.DataParallel(net).cuda() if args.gpus else net.cuda(args.gpu)
     net = init_network(net)
