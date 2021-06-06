@@ -12,14 +12,13 @@ from time import time
 
 class ProgressBar:
     def __init__(self, total: int):
-        self.stage, self.total = 0, total
-        self.time = time()
+        self.stage, self.total, self.time = 0, total, time()
 
     def update(self, postfix='', n=1):
         self.stage += n
-        progress = "●" * (30 * self.stage // self.total)
-        time_delta = timedelta(seconds=int(time() - self.time))
-        print(f'\r[{progress:30}] {self.stage:3d}/{self.total:<3d} {time_delta} {postfix}', end='')
+        delta = timedelta(seconds=int(time() - self.time))
+        progress = '=' * (30 * self.stage // self.total)
+        print(f'\r[{progress:30}] - {self.stage:3d}/{self.total:<3d} - {delta} - {postfix}', end='')
 
     def __enter__(self):
         return self
