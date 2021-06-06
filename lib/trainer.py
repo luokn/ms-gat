@@ -25,21 +25,21 @@ class Trainer:
 
     def fit(self, data_loader_t, data_loader_v, epochs=100, device=None):
         while self.epoch <= epochs:
-            print(f"Epoch {self.epoch} training...")
+            print(f"Epoch {self.epoch}/{epochs} | Train")
             stats_t = self._run_epoch(data_loader_t, device, train=True)  # train epoch
-            print(f"Epoch {self.epoch} validating...")
+            self.history[0] += [stats_t]
+            print(f"Epoch {self.epoch}/{epochs} | Validate")
             stats_v = self._run_epoch(data_loader_v, device, train=False)  # validate epoch
+            self.history[1] += [stats_v]
             if self.epoch > 10 and stats_v['loss'] < self.min_loss:
                 self.save_checkpoint(self.epoch, stats_v['loss'])  # save checkpoint
                 self.best_epoch, self.min_loss = self.epoch, stats_v['loss']
             self.epoch += 1
-            self.history[0].append(stats_t)
-            self.history[1].append(stats_v)
 
     def evaluate(self, data_loader_e, device=None):
-        print('Evaluating...')
+        print('Evaluate')
         stats_e = self._run_epoch(data_loader_e, device, train=False)  # evaluate
-        self.history[-1].append(stats_e)
+        self.history[-1] += [stats_e]
 
     def _run_epoch(self, data_loader, device, train=True):
         metrics, total_loss = Metrics(), .0
@@ -58,7 +58,7 @@ class Trainer:
                     total_loss += loss.item()  # update total loss
                     metrics.update(pred, target)  # update metrics
                     stats = {'loss': total_loss / (i + 1), **metrics.stats()}  # update stats
-                    bar.update(' '.join([f'{k}:{v:7.4f}' for k, v in stats.items()]))  # update progress bar
+                    bar.update(' - '.join([f'{k}:{v:6.2f}' for k, v in stats.items()]))  # update progress bar
         return stats
 
     def save_history(self):
