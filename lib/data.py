@@ -8,7 +8,44 @@
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, Dataset
+
+
+class MyDataset(Dataset):
+    def __init__(self, X: torch.Tensor, Y: torch.Tensor, hours: list, out_timesteps: int, frequency: int, start: int, end: int):
+        self.X, self.Y, self.hours, self.out_timesteps, self.frequency, self.start, self.end = X, Y, hours, out_timesteps, frequency, start, end
+
+    def __getitem__(self, index: int):
+        t = index + self.start
+        h = t // self.frequency
+        d = h // 24
+        x = torch.stack([
+            self.X[..., (t - hour * self.frequency):(t - hour * self.frequency + self.frequency)] for hour in self.hours
+        ])
+        y = self.Y[0, :, t:(t + self.out_timesteps)]
+        return x, h % 24, d % 7, y
+
+    def __len__(self):
+        return self.end - self.start
+
+
+def load_data(file, hours, out_timesteps, frequency, batch_size, num_workers=0, pin_memory=True):  # load data
+    in_timesteps = frequency * max(hours)
+    data = torch.from_numpy(np.load(file)['data']).float().transpose(0, -1)  # -> [n_channels, n_nodes, n_timesteps]
+    length = data.shape[-1] - in_timesteps - out_timesteps + 1
+    split1, split2 = int(.6 * length), int(.8 * length)
+    ranges = [
+        [in_timesteps, in_timesteps + split1],
+        [in_timesteps + split1, in_timesteps + split2],
+        [in_timesteps + split2, in_timesteps + length]
+    ]
+    normalized_data = normalize(data, split=in_timesteps + split1)
+    return [
+        DataLoader(MyDataset(X=normalized_data, Y=data,
+                             hours=hours, out_timesteps=out_timesteps, frequency=frequency, start=start, end=end),
+                   batch_size=batch_size, shuffle=i == 0, num_workers=num_workers, pin_memory=pin_memory)
+        for i, (start, end) in enumerate(ranges)
+    ]
 
 
 def load_adj(file, n_nodes):  # load adjacency matrix
@@ -26,31 +63,6 @@ def load_adj(file, n_nodes):  # load adjacency matrix
     return D_rsqrt @ A @ D_rsqrt
 
 
-def load_data(file, frequency, hours, out_timesteps, batch_size, num_workers=0, pin_memory=True):  # make data loaders
-    timeseries = torch.from_numpy(np.load(file)['data'].astype(np.float32)).transpose(1, 2)
-    X, H, D, Y = generate(timeseries, frequency, hours, out_timesteps)
-    sizes = [len(X) - 2 * int(.2 * len(X)), int(.2 * len(X)), int(.2 * len(X))]
-    normalize(X, dim=0, split=sizes[0])
-    return [
-        DataLoader(TensorDataset(*tensors), batch_size, shuffle=i == 0, num_workers=num_workers, pin_memory=pin_memory)
-        for i, tensors in enumerate(zip(*[tensor.split(sizes) for tensor in [X, H, D, Y]]))
-    ]
-
-
-def generate(series: torch.Tensor, frequency, hours, out_timesteps):  # generate sliced datasets from sequence
-    timesteps = [hour * frequency for hour in hours]
-    max_timestep = max(timesteps)
-    X = torch.stack([
-        series[max_timestep - step:-step].unfold(0, size=frequency, step=1) for step in timesteps
-    ], dim=0).transpose(0, 1)
-    Y = series[max_timestep:, 0].unfold(0, size=frequency, step=1)
-    T = torch.arange(len(Y)) // frequency
-    H, D = T % 24, (T // 24) % 7
-    return X, H, D, Y[..., :out_timesteps]
-
-
-def normalize(x: torch.Tensor, dim: int, split: int):
-    std, mean = torch.std_mean(x[:split], dim=dim, keepdim=True)
-    x -= mean
-    x /= std
-    return dict(std=std, mean=mean)
+def normalize(tensor: torch.Tensor, split: int):
+    std, mean = torch.std_mean(tensor[..., :split], dim=-1, keepdim=True)
+    return (tensor - mean) / std
