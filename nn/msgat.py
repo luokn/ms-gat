@@ -164,7 +164,7 @@ class MSGAT(nn.Module):
         ))
 
 
-def msgat(n_components, in_channels, in_timesteps, out_timesteps, adj, te=True):
+def msgat(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
     components = [[
         {
             'in_channels': in_channels,
