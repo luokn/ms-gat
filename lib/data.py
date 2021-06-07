@@ -29,7 +29,7 @@ def load_adj(file, n_nodes):  # load adjacency matrix
 def load_data(file, frequency, hours, out_timesteps, batch_size, num_workers=0, pin_memory=True):  # make data loaders
     timeseries = torch.from_numpy(np.load(file)['data'].astype(np.float32)).transpose(1, 2)
     X, H, D, Y = generate(timeseries, frequency, hours, out_timesteps)
-    sizes = [int(.6 * len(X)), int(.8 * len(X))]
+    sizes = [len(X) - 2 * int(.2 * len(X)), int(.2 * len(X)), int(.2 * len(X))]
     normalize(X, dim=0, split=sizes[0])
     return [
         DataLoader(TensorDataset(*tensors), batch_size, shuffle=i == 0, num_workers=num_workers, pin_memory=pin_memory)
