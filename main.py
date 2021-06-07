@@ -33,8 +33,8 @@ parser.add_argument('--gpus', type=str, default=None, help='GPUs')
 parser.add_argument('--model', type=str, default='msgat', help='Model name')
 parser.add_argument('--no-te', type=bool, default=False, help='No time embedding')
 parser.add_argument('--frequency', type=int, default=12, help='Time steps per hour')
-parser.add_argument('--out-timesteps', type=int, default=12, help='Number of output time steps')
-parser.add_argument('--hours', type=str, default='1,2,3,24,168', help='Hours of sampling')
+parser.add_argument('--in-hours', type=str, default='1,2,3,24,168', help='Hours of sampling')
+parser.add_argument('--out-timesteps', type=int, default=12, help='Number of output timesteps')
 parser.add_argument('--delta', type=float, default=60, help='Delta of huber loss')
 
 args = parser.parse_args()
@@ -43,15 +43,15 @@ print(args)
 if __name__ == '__main__':
     if args.gpus:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
-    hours = [int(h) for h in args.hours.split(',')]
+    in_hours = [int(h) for h in args.in_hours.split(',')]
     # adjacency matrix
     adj = load_adj(args.adj, args.nodes)
     # data loaders
-    data_loaders = load_data(args.data, frequency=args.frequency, hours=hours, out_timesteps=args.out_timesteps,
-                             batch_size=args.batch, num_workers=args.workers, pin_memory=True)
+    data_loaders = load_data(args.data, batch_size=args.batch, in_hours=in_hours, out_timesteps=args.out_timesteps, frequency=args.frequency,
+                             num_workers=args.workers, pin_memory=True)
     # network
-    net = msgat(n_components=len(hours), in_channels=args.channels, in_timesteps=args.frequency,
-                out_timesteps=args.out_timesteps, adj=adj, te=not args.no_te)
+    net = msgat(n_components=len(in_hours), in_channels=args.channels, in_timesteps=args.frequency, out_timesteps=args.out_timesteps,
+                adj=adj, te=not args.no_te)
     net = nn.DataParallel(net).cuda() if args.gpus else net.cuda(args.gpu)
     net = init_network(net)
     # optimizer
