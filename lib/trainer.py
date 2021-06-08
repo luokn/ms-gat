@@ -25,10 +25,9 @@ class Trainer:
 
     def fit(self, data_loader_t, data_loader_v, epochs=100, device=None):
         while self.epoch <= epochs:
-            print(f"Epoch {self.epoch}/{epochs} | Train")
+            print(f"Epoch {self.epoch}/{epochs}")
             stats_t = self._run_epoch(data_loader_t, device, train=True)  # train epoch
             self.history[0] += [stats_t]
-            print(f"Epoch {self.epoch}/{epochs} | Validate")
             stats_v = self._run_epoch(data_loader_v, device, train=False)  # validate epoch
             self.history[1] += [stats_v]
             if self.epoch > 10 and stats_v['loss'] < self.min_loss:
