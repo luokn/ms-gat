@@ -30,7 +30,7 @@ class MyDataset(Dataset):
 
 
 # load data
-def load_data(file, batch_size: int, in_hours=[1, 2, 3, 24, 24 * 7], out_timesteps=12, frequency=12, num_workers=0, pin_memory=True):
+def load_data(file, batch_size: int, in_hours: list, out_timesteps: int, frequency: int, num_workers=0, pin_memory=True):
     in_timesteps = frequency * max(in_hours)
     data = torch.from_numpy(np.load(file)['data']).float().transpose(0, -1)  # -> [n_channels, n_nodes, n_timesteps]
     length = data.shape[-1] - in_timesteps - out_timesteps + 1
