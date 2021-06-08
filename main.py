@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 from torch import nn, optim
 
 from lib import HuberLoss, Trainer, init_network, load_adj, load_data
-from nn import msgat
+from nn import msgat, msgat_l, msgat_m, msgat_s
 
 parser = ArgumentParser(description="Train MS-GAT")
 
@@ -49,7 +49,8 @@ if __name__ == '__main__':
     # adjacency matrix
     adj = load_adj(args.adj, args.nodes)
     # network
-    net = msgat(len(in_hours), args.channels, args.frequency, args.out_timesteps, adj, te=not args.no_te)
+    models = {'msgat': msgat, 'msgat_l': msgat_l,  'msgat_m': msgat_m, 'msgat_s': msgat_s}
+    net = models[args.model](len(in_hours), args.channels, args.frequency, args.out_timesteps, adj, te=not args.no_te)
     net = nn.DataParallel(net).cuda() if args.gpus else net.cuda(args.gpu)
     net = init_network(net)
     # optimizer
