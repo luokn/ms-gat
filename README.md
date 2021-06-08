@@ -1,4 +1,4 @@
-<h2 align="center">MS-GAT: Multi-relational Synchronous Graph Attention Network</h2>
+<h2 align="center">Multi-relational Graph Attention Networks for Traffic Interaction Modeling and Prediction</h2>
 
 **Data**
 
