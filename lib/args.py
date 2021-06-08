@@ -9,8 +9,9 @@
 from argparse import ArgumentParser
 
 
-def parse_args():
+def parse_args():  # parse arguments
     parser = ArgumentParser(description="Train MS-GAT")
+
     parser.add_argument('--data', type=str, help='Data file')
     parser.add_argument('--adj', type=str, help='Adjacency file')
     parser.add_argument('--nodes', type=int, help='Number of nodes')
