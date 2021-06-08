@@ -7,49 +7,28 @@
 # @Time    : 17:05:00
 
 import os
-from argparse import ArgumentParser
 
 from torch import nn, optim
 
-from lib import HuberLoss, Trainer, init_network, load_adj, load_data
+from lib import (HuberLoss, Trainer, init_network, load_adj, load_data,
+                 parse_args)
 from nn import msgat, msgat_l, msgat_m, msgat_s
 
-parser = ArgumentParser(description="Train MS-GAT")
-
-parser.add_argument('--data', type=str, help='Data file')
-parser.add_argument('--adj', type=str, help='Adjacency file')
-parser.add_argument('--nodes', type=int, help='Number of nodes')
-parser.add_argument('--channels', type=int, help='Number of channels')
-parser.add_argument('--checkpoints', type=str, help='Checkpoints path')
-parser.add_argument('--checkpoint', type=str, default=None, help='Checkpoint name')
-
-parser.add_argument('--batch', type=int, default=64, help='Batch size')
-parser.add_argument('--lr', type=float, default=1e-3, help='Learn rate')
-parser.add_argument('--epochs', type=int, default=200, help='Number of epochs')
-parser.add_argument('--workers', type=int, default=0, help='Number of data loader workers')
-parser.add_argument('--gpu', type=int, default=None, help='GPU')
-parser.add_argument('--gpus', type=str, default=None, help='GPUs')
-
-parser.add_argument('--model', type=str, default='msgat', help='Model name')
-parser.add_argument('--no-te', type=bool, default=False, help='No time embedding')
-parser.add_argument('--frequency', type=int, default=12, help='Time steps per hour')
-parser.add_argument('--in-hours', type=str, default='1,2,3,24,168', help='Hours of sampling')
-parser.add_argument('--out-timesteps', type=int, default=12, help='Number of output timesteps')
-parser.add_argument('--delta', type=float, default=60, help='Delta of huber loss')
-
-args = parser.parse_args()
-print(args)
+models = {'msgat': msgat, 'msgat_l': msgat_l,  'msgat_m': msgat_m, 'msgat_s': msgat_s}
 
 if __name__ == '__main__':
+    # parser arguments
+    args = parse_args()
+    print(args)
+    # set CUDA_VISIBLE_DEVICES
     if args.gpus:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
-    in_hours = [int(hour) for hour in args.in_hours.split(',')]
     # data loaders
+    in_hours = [int(hour) for hour in args.in_hours.split(',')]
     data_loaders = load_data(args.data, args.batch, in_hours, args.out_timesteps, args.frequency, args.workers)
     # adjacency matrix
     adj = load_adj(args.adj, args.nodes)
     # network
-    models = {'msgat': msgat, 'msgat_l': msgat_l,  'msgat_m': msgat_m, 'msgat_s': msgat_s}
     net = models[args.model](len(in_hours), args.channels, args.frequency, args.out_timesteps, adj, te=not args.no_te)
     net = nn.DataParallel(net).cuda() if args.gpus else net.cuda(args.gpu)
     net = init_network(net)
