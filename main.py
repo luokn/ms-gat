@@ -25,7 +25,7 @@ parser.add_argument('--checkpoint', type=str, default=None, help='Checkpoint nam
 
 parser.add_argument('--batch', type=int, default=64, help='Batch size')
 parser.add_argument('--lr', type=float, default=1e-3, help='Learn rate')
-parser.add_argument('--epochs', type=int, default=100, help='Number of epochs')
+parser.add_argument('--epochs', type=int, default=200, help='Number of epochs')
 parser.add_argument('--workers', type=int, default=0, help='Number of data loader workers')
 parser.add_argument('--gpu', type=int, default=None, help='GPU')
 parser.add_argument('--gpus', type=str, default=None, help='GPUs')
@@ -43,15 +43,13 @@ print(args)
 if __name__ == '__main__':
     if args.gpus:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
-    in_hours = [int(h) for h in args.in_hours.split(',')]
+    in_hours = [int(hour) for hour in args.in_hours.split(',')]
+    # data loaders
+    data_loaders = load_data(args.data, args.batch, in_hours, args.out_timesteps, args.frequency, args.workers)
     # adjacency matrix
     adj = load_adj(args.adj, args.nodes)
-    # data loaders
-    data_loaders = load_data(args.data, batch_size=args.batch, in_hours=in_hours, out_timesteps=args.out_timesteps, frequency=args.frequency,
-                             num_workers=args.workers, pin_memory=True)
     # network
-    net = msgat(n_components=len(in_hours), in_channels=args.channels, in_timesteps=args.frequency, out_timesteps=args.out_timesteps,
-                adj=adj, te=not args.no_te)
+    net = msgat(len(in_hours), args.channels, args.frequency, args.out_timesteps, adj, te=not args.no_te)
     net = nn.DataParallel(net).cuda() if args.gpus else net.cuda(args.gpu)
     net = init_network(net)
     # optimizer
