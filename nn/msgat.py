@@ -165,7 +165,24 @@ class MSGAT(nn.Module):
         ))
 
 
-def msgat(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+def msgat_s(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+    components = [[
+        {
+            'in_channels': in_channels,
+            'out_channels': 48,
+            'dilations': [1, 2]
+        },
+        {
+            'in_channels': 48,
+            'out_channels': 48,
+            'dilations': [2, 4]
+        },
+    ]] * n_components
+    net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
+    return net
+
+
+def msgat_m(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
     components = [[
         {
             'in_channels': in_channels,
@@ -180,3 +197,24 @@ def msgat(n_components: int, in_channels: int, in_timesteps: int, out_timesteps:
     ]] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
     return net
+
+
+def msgat_l(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+    components = [[
+        {
+            'in_channels': in_channels,
+            'out_channels': 72,
+            'dilations': [1, 1, 2, 2]
+        },
+        {
+            'in_channels': 72,
+            'out_channels': 72,
+            'dilations': [4, 4]
+        },
+    ]] * n_components
+    net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
+    return net
+
+
+def msgat(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+    return msgat_m(n_components, in_channels, in_timesteps, out_timesteps, adj, te)
