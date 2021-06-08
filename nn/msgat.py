@@ -13,12 +13,12 @@ from torch import nn
 class GAttention(nn.Module):
     def __init__(self, n_channels, n_timesteps):
         super(GAttention, self).__init__()
-        self.Gw = nn.Parameter(torch.zeros(n_timesteps, n_timesteps), requires_grad=True)
+        self.Wg = nn.Parameter(torch.zeros(n_timesteps, n_timesteps), requires_grad=True)
         self.alpha = nn.Parameter(torch.zeros(n_channels), requires_grad=True)
 
     def forward(self, x: torch.Tensor, adj: torch.Tensor):
         k = q = torch.einsum('bint,i->bnt', x, self.alpha)  # -> [batch_size, n_nodes, n_timesteps]
-        att = torch.softmax(k @ self.Gw @ q.transpose(1, 2), dim=-1)  # -> [batch_size, n_nodes, n_nodes]
+        att = torch.softmax(k @ self.Wg @ q.transpose(1, 2), dim=-1)  # -> [batch_size, n_nodes, n_nodes]
         return torch.einsum('bni,bcit->bcnt', att * adj, x)  # -> [batch_size, in_channels, n_nodes, n_timesteps]
 
 
@@ -65,7 +65,7 @@ class TACN(nn.Module):
         for i, dilation in enumerate(dilations):
             seq += [
                 nn.Conv2d(channels[i], channels[i + 1], [1, 2], padding=[0, dilation], dilation=[1, dilation]),
-                Chomp(chomp_size=dilation)
+                Chomp(chomp_size=dilation),
             ]
         self.seq = nn.Sequential(*seq)
 
@@ -88,12 +88,13 @@ class CAttention(nn.Module):
 class CACN(nn.Module):
     def __init__(self, in_channels, out_channels, n_nodes, n_timesteps):
         super(CACN, self).__init__()
-        self.catt = CAttention(n_nodes=n_nodes, n_timesteps=n_timesteps)
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+        self.seq = nn.Sequential(
+            CAttention(n_nodes=n_nodes, n_timesteps=n_timesteps),
+            nn.Conv2d(in_channels, out_channels, kernel_size=1),
+        )
 
     def forward(self, x: torch.Tensor):
-        x = self.catt(x)  # -> [batch_size, in_channels, n_nodes, n_timesteps]
-        return self.conv(x)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
+        return self.seq(x)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
 
 
 class TGACN(nn.Module):
