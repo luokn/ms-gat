@@ -43,19 +43,19 @@
     ```bash
     # PEMSD3
     python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv \
-    --checkpoints checkpoints/pemsd3 --nodes 358 --channels 1 --batch 64 --workers 4 --gpus 0,1,2,3
+        --checkpoints checkpoints/pemsd3 --nodes 358 --channels 1 --batch 64 --workers 4 --gpus 0,1,2,3
 
     # PEMSD4
     python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv \
-    --checkpoints checkpoints/pemsd4 --nodes 307 --channels 3 --batch 64 --workers 4 --gpus 0,1,2,3
+        --checkpoints checkpoints/pemsd4 --nodes 307 --channels 3 --batch 64 --workers 4 --gpus 0,1,2,3
 
     # PEMSD7
     python3 ./main.py --data data/pemsd7/pemsd7.npz --adj data/pemsd7/pemsd7.csv \
-    --checkpoints checkpoints/pemsd7 --nodes 883 --channels 1 --batch 48 --workers 4 --gpus 0,1,2,3
+        --checkpoints checkpoints/pemsd7 --nodes 883 --channels 1 --batch 48 --workers 4 --gpus 0,1,2,3
 
     # PEMSD8
     python3 ./main.py --data data/pemsd8/pemsd8.npz --adj data/pemsd8/pemsd8.csv \
-    --checkpoints checkpoints/pemsd8 --nodes 170 --channels 3 --batch 64 --workers 4 --gpus 0,1,2,3
+        --checkpoints checkpoints/pemsd8 --nodes 170 --channels 3 --batch 64 --workers 4 --gpus 0,1,2,3
 
     # PEMS-BAY
     python3 ./main.py --data data/pems-bay/pems-bay.npz --adj data/pems-bay/pems-bay.csv \
