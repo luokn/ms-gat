@@ -99,7 +99,7 @@ class CACN(nn.Module):
 
 class TGACN(nn.Module):
     def __init__(self, in_channels, out_channels, n_nodes, n_timesteps, dilations):
-        assert in_channels % 3 == 0
+        assert out_channels % 3 == 0
         super(TGACN, self).__init__()
         self.ln = nn.LayerNorm([n_timesteps])
         self.res = nn.Conv2d(in_channels, out_channels, kernel_size=1)
