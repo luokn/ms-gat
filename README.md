@@ -58,7 +58,7 @@
     --checkpoints checkpoints/pemsd8 --nodes 170 --channels 3 --batch 64 --workers 4 --gpus 0,1,2,3
 
     # PEMS-BAY
-        python3 ./main.py --data data/pems-bay/pems-bay.npz --adj data/pems-bay/pems-bay.csv \
+    python3 ./main.py --data data/pems-bay/pems-bay.npz --adj data/pems-bay/pems-bay.csv \
         --checkpoints checkpoints/pems-bay --nodes 325 --channels 1 --batch 64 --delta 20 \
         --workers 4 --gpus 0,1,2,3
     ```
