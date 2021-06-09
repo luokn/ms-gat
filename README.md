@@ -17,7 +17,7 @@
 
     ```bash
     # PEMSD3
-    python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv \
+    python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv --in-hours 1,2,3,24 \
         --checkpoints checkpoints/pemsd3 --nodes 358 --channels 1 --batch 64 --workers 4 --gpu 0
 
     # PEMSD4
@@ -42,7 +42,7 @@
 
     ```bash
     # PEMSD3
-    python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv \
+    python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv --in-hours 1,2,3,24 \
         --checkpoints checkpoints/pemsd3 --nodes 358 --channels 1 --batch 64 --workers 4 --gpus 0,1,2,3
 
     # PEMSD4
