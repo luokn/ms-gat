@@ -63,6 +63,7 @@
 
 \***Checkpoints**
 
+-   _PEMSD3, 2080TI-11G:_ [<img src="https://img.shields.io/badge/PEMSD3-MAE=15.60_MAPE=16.36_RMSE=26.36-4EAA25?style=flat-square"/>](https://drive.google.com/file/d/16bUCaI4p23vTGdMOXRRT45TNqci7VLCi/view?usp=sharing)
 -   _PEMSD4, 2080TI-11G:_ [<img src="https://img.shields.io/badge/PEMSD4-MAE=19.49_MAPE=13.67_RMSE=31.66-4EAA25?style=flat-square"/>](https://drive.google.com/file/d/1UEE1YJuA2RGhnL8R_XjBzrY03QJ6z1Vs/view?usp=sharing)
 -   _PEMSD7, 2080TI-11G:_ [<img src="https://img.shields.io/badge/PEMSD7-MAE=20.44_MAPE=8.85_RMSE=34.11-4EAA25?style=flat-square">](https://drive.google.com/file/d/1a9VdvFOaMGU9-JyeRlDUDlzjHdrsEKSr/view?usp=sharing)
 -   _PEMSD8, 2080TI-11G:_ [<img src="https://img.shields.io/badge/PEMSD8-MAE=14.58_MAPE=10.10_RMSE=23.94-4EAA25?style=flat-square"/>](https://drive.google.com/file/d/18_mJtL0G6KQZF8QxSLQu9THFg-h_46q-/view?usp=sharing)
