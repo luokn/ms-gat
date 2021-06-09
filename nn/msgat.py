@@ -97,10 +97,10 @@ class CACN(nn.Module):
         return self.seq(x)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
 
 
-class TGACN(nn.Module):
+class MEAM(nn.Module):
     def __init__(self, in_channels, out_channels, n_nodes, n_timesteps, dilations):
         assert out_channels % 3 == 0
-        super(TGACN, self).__init__()
+        super(MEAM, self).__init__()
         self.ln = nn.LayerNorm([n_timesteps])
         self.res = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         self.cacn = CACN(in_channels, out_channels // 3, n_nodes=n_nodes, n_timesteps=n_timesteps)
@@ -116,15 +116,14 @@ class TGACN(nn.Module):
 
 
 class TPC(nn.Module):
-    def __init__(self, tgacns, in_timesteps, out_timesteps, n_nodes):
+    def __init__(self, channels, n_nodes, in_timesteps, out_timesteps, dilations):
         super(TPC, self).__init__()
         self.tgacns = nn.ModuleList([
-            TGACN(in_channels=tgacn['in_channels'], out_channels=tgacn['out_channels'],
-                  n_nodes=n_nodes, n_timesteps=in_timesteps, dilations=tgacn['dilations']) for tgacn in tgacns
+            MEAM(channels[i], channels[i + 1], n_nodes=n_nodes, n_timesteps=in_timesteps, dilations=d)
+            for i, d in enumerate(dilations)
         ])
         self.ln = nn.LayerNorm([in_timesteps])
-        self.fc = nn.Conv2d(in_channels=in_timesteps, out_channels=out_timesteps,
-                            kernel_size=[1, tgacns[-1]['out_channels']])
+        self.fc = nn.Conv2d(in_timesteps, out_timesteps, kernel_size=[1, channels[-1]])
 
     def forward(self, x: torch.Tensor, adj: torch.Tensor):
         for tgacn in self.tgacns:
@@ -155,63 +154,38 @@ class MSGAT(nn.Module):
             self.W = nn.Parameter(torch.zeros(len(components), len(adj), out_timesteps), requires_grad=True)
         self.adj = nn.Parameter(adj, requires_grad=False)
         self.tpcs = nn.ModuleList([
-            TPC(component, in_timesteps=in_timesteps, out_timesteps=out_timesteps, n_nodes=len(adj))
-            for component in components
+            TPC(channels=c['channels'], n_nodes=len(adj), in_timesteps=in_timesteps, out_timesteps=out_timesteps,
+                dilations=c['dilations']) for c in components
         ])
 
     def forward(self, X: torch.Tensor, H: torch.Tensor, D: torch.Tensor):
-        return sum((
-            tpc(x, self.adj) * g for tpc, x, g in zip(self.tpcs, X.unbind(1), self.te(H, D).unbind(1) if self.te else self.W.unbind(0))
-        ))
+        G = self.te(H, D).unbind(1) if self.te else self.W.unbind()
+        return sum((tpc(x, self.adj) * g for tpc, x, g in zip(self.tpcs, X.unbind(1), G)))
 
 
 def msgat_s(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
-    components = [[
-        {
-            'in_channels': in_channels,
-            'out_channels': 48,
-            'dilations': [1, 2]
-        },
-        {
-            'in_channels': 48,
-            'out_channels': 48,
-            'dilations': [2, 4]
-        },
-    ]] * n_components
+    components = [{
+        "channels": [in_channels, 48, 48],
+        "dilations":[[1, 2], [2, 4]]
+    }] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
     return net
 
 
 def msgat_m(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
-    components = [[
-        {
-            'in_channels': in_channels,
-            'out_channels': 72,
-            'dilations': [1, 2]
-        },
-        {
-            'in_channels': 72,
-            'out_channels': 72,
-            'dilations': [2, 4]
-        },
-    ]] * n_components
+    components = [{
+        "channels": [in_channels, 72, 72],
+        "dilations":[[1, 2], [2, 4]]
+    }] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
     return net
 
 
 def msgat_l(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
-    components = [[
-        {
-            'in_channels': in_channels,
-            'out_channels': 72,
-            'dilations': [1, 1, 2, 2]
-        },
-        {
-            'in_channels': 72,
-            'out_channels': 72,
-            'dilations': [4, 4]
-        },
-    ]] * n_components
+    components = [{
+        "channels": [in_channels, 72, 72],
+        "dilations":[[1, 1, 2, 2], [4, 4]]
+    }] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
     return net
 
