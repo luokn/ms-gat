@@ -21,7 +21,7 @@ def parse_args():  # parse arguments
 
     parser.add_argument('--batch', type=int, default=64, help='Batch size')
     parser.add_argument('--lr', type=float, default=1e-3, help='Learn rate')
-    parser.add_argument('--epochs', type=int, default=200, help='Number of epochs')
+    parser.add_argument('--epochs', type=int, default=120, help='Number of epochs')
     parser.add_argument('--workers', type=int, default=0, help='Number of data loader workers')
     parser.add_argument('--gpu', type=int, default=None, help='GPU')
     parser.add_argument('--gpus', type=str, default=None, help='GPUs')
