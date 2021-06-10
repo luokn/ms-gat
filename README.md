@@ -10,7 +10,7 @@
 1. _Create directories:_
 
     ```bash
-    mkdir checkpoints && mkdir checkpoints/pems{d3,d4,d7,d8,-bay}
+    mkdir -p checkpoints/pems{d3,d4,d7,d8,-bay}
     ```
 
 2. _Train on a single GPU:_
