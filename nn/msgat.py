@@ -188,7 +188,3 @@ def msgat48(n_components: int, in_channels: int, in_timesteps: int, out_timestep
     }] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
     return net
-
-
-def msgat(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
-    return msgat72(n_components, in_channels, in_timesteps, out_timesteps, adj, te)
