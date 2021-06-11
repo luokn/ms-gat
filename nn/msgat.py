@@ -163,7 +163,7 @@ class MSGAT(nn.Module):
         return sum((tpc(x, self.adj) * g for tpc, x, g in zip(self.tpcs, X.unbind(1), G)))
 
 
-def msgat_s(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+def msgat96(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
     components = [{
         "channels": [in_channels, 48, 48],
         "dilations":[[1, 2], [2, 4]]
@@ -172,7 +172,7 @@ def msgat_s(n_components: int, in_channels: int, in_timesteps: int, out_timestep
     return net
 
 
-def msgat_m(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+def msgat72(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
     components = [{
         "channels": [in_channels, 72, 72],
         "dilations":[[1, 2], [2, 4]]
@@ -181,9 +181,9 @@ def msgat_m(n_components: int, in_channels: int, in_timesteps: int, out_timestep
     return net
 
 
-def msgat_l(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+def msgat48(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
     components = [{
-        "channels": [in_channels, 72, 72],
+        "channels": [in_channels, 96, 96],
         "dilations":[[1, 1, 2, 2], [4, 4]]
     }] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
@@ -191,4 +191,4 @@ def msgat_l(n_components: int, in_channels: int, in_timesteps: int, out_timestep
 
 
 def msgat(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
-    return msgat_m(n_components, in_channels, in_timesteps, out_timesteps, adj, te)
+    return msgat72(n_components, in_channels, in_timesteps, out_timesteps, adj, te)

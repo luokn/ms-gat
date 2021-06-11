@@ -1,1 +1,1 @@
-from .msgat import msgat, msgat_l, msgat_m, msgat_s
+from .msgat import msgat, msgat48, msgat72, msgat96
