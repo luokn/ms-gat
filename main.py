@@ -13,9 +13,9 @@ from torch.optim import Adam
 
 from lib import (HuberLoss, Trainer, init_network, load_adj, load_data,
                  parse_args)
-from nn import msgat, msgat48, msgat72, msgat96
+from nn import msgat48, msgat72, msgat96
 
-models = {'msgat': msgat, 'msgat48': msgat48,  'msgat72': msgat72, 'msgat96': msgat96}
+models = {'msgat': msgat72, 'msgat48': msgat48,  'msgat72': msgat72, 'msgat96': msgat96}
 
 if __name__ == '__main__':
     # parser arguments
