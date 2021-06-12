@@ -19,9 +19,7 @@ class MyDataset(Dataset):
         t = index + self.start
         h = t // self.frequency
         d = h // 24
-        x = torch.stack([
-            self.X[..., (t - hour * self.frequency):(t - hour * self.frequency + self.frequency)] for hour in self.in_hours
-        ])
+        x = torch.stack([self.X[..., (t - hour * self.frequency):(t - hour * self.frequency + self.frequency)] for hour in self.in_hours])
         y = self.Y[..., t:(t + self.out_timesteps)]
         return x, h % 24, d % 7, y
 
@@ -43,8 +41,7 @@ def load_data(file, batch_size: int, in_hours: list, out_timesteps: int, frequen
     normalized_data = normalize(data, split=in_timesteps + split1)
     return [
         DataLoader(MyDataset(X=normalized_data, Y=data[0], in_hours=in_hours, out_timesteps=out_timesteps, frequency=frequency, start=start, end=end),
-                   batch_size=batch_size, shuffle=i == 0, num_workers=num_workers, pin_memory=pin_memory)
-        for i, (start, end) in enumerate(ranges)
+                   batch_size=batch_size, shuffle=i == 0, num_workers=num_workers, pin_memory=pin_memory) for i, (start, end) in enumerate(ranges)
     ]
 
 
