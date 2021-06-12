@@ -88,10 +88,7 @@ class CAttention(nn.Module):
 class CACN(nn.Module):
     def __init__(self, in_channels, out_channels, n_nodes, n_timesteps):
         super(CACN, self).__init__()
-        self.seq = nn.Sequential(
-            CAttention(n_nodes=n_nodes, n_timesteps=n_timesteps),
-            nn.Conv2d(in_channels, out_channels, kernel_size=1),
-        )
+        self.seq = nn.Sequential(CAttention(n_nodes=n_nodes, n_timesteps=n_timesteps), nn.Conv2d(in_channels, out_channels, 1))
 
     def forward(self, x: torch.Tensor):
         return self.seq(x)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
@@ -110,7 +107,7 @@ class MEAM(nn.Module):
     def forward(self, x: torch.Tensor, adj: torch.Tensor):
         out = self.ln(x)  # -> [batch_size, in_channels, n_nodes, n_timesteps]
         # -> [batch_size, out_channels, n_nodes, n_timesteps]
-        out = torch.cat([self.cacn(out),  self.tacn(out), self.gacn(out, adj)], dim=1)
+        out = torch.cat([self.cacn(out), self.tacn(out), self.gacn(out, adj)], dim=1)
         out += self.res(x)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
         return torch.relu(out)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
 
@@ -154,8 +151,8 @@ class MSGAT(nn.Module):
             self.W = nn.Parameter(torch.zeros(len(components), len(adj), out_timesteps), requires_grad=True)
         self.adj = nn.Parameter(adj, requires_grad=False)
         self.tpcs = nn.ModuleList([
-            TPC(channels=c['channels'], n_nodes=len(adj), in_timesteps=in_timesteps, out_timesteps=out_timesteps,
-                dilations=c['dilations']) for c in components
+            TPC(channels=c['channels'], n_nodes=len(adj), in_timesteps=in_timesteps, out_timesteps=out_timesteps, dilations=c['dilations'])
+            for c in components
         ])
 
     def forward(self, X: torch.Tensor, H: torch.Tensor, D: torch.Tensor):
@@ -164,27 +161,18 @@ class MSGAT(nn.Module):
 
 
 def msgat96(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
-    components = [{
-        "channels": [in_channels, 48, 48],
-        "dilations":[[1, 2], [2, 4]]
-    }] * n_components
+    components = [{"channels": [in_channels, 48, 48], "dilations":[[1, 2], [2, 4]]}] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
     return net
 
 
 def msgat72(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
-    components = [{
-        "channels": [in_channels, 72, 72],
-        "dilations":[[1, 2], [2, 4]]
-    }] * n_components
+    components = [{"channels": [in_channels, 72, 72], "dilations":[[1, 2], [2, 4]]}] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
     return net
 
 
 def msgat48(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
-    components = [{
-        "channels": [in_channels, 96, 96],
-        "dilations":[[1, 1, 2, 2], [4, 4]]
-    }] * n_components
+    components = [{"channels": [in_channels, 96, 96], "dilations":[[1, 1, 2, 2], [4, 4]]}] * n_components
     net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
     return net
