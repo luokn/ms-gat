@@ -15,7 +15,7 @@ class Metrics:
         self.AE, self.APE, self.SE = .0, .0, .0
         self.MAE, self.MAPE, self.RMSE = .0, .0, .0
 
-    def update(self, pred: torch.Tensor, target: torch.Tensor):
+    def __call__(self, pred: torch.Tensor, target: torch.Tensor):
         self.n += target.nelement()
         # MAE
         self.AE += torch.abs(pred - target).sum().item()
@@ -28,6 +28,5 @@ class Metrics:
         # RMSE
         self.SE += torch.square(pred - target).sum().item()
         self.RMSE = (self.SE / self.n)**.5
-
-    def stats(self):
-        return dict(MAE=self.MAE, MAPE=self.MAPE, RMSE=self.RMSE)
+        # stats
+        return {'MAE': self.MAE, 'MAPE': self.MAPE, 'RMSE': self.RMSE}

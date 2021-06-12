@@ -55,8 +55,7 @@ class Trainer:
                         loss.backward()
                         self.optimizer.step()
                     total_loss += loss.item()  # update total loss
-                    metrics.update(pred, target)  # update metrics
-                    stats = {'loss': total_loss / (i + 1), **metrics.stats()}  # update stats
+                    stats = {'loss': total_loss / (i + 1), **metrics(pred, target)}  # update stats
                     bar.update(' - '.join([f'{k}:{v:6.2f}' for k, v in stats.items()]))  # update progress bar
         return stats
 
