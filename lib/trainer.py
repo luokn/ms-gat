@@ -76,4 +76,5 @@ class Trainer:
         states = torch.load(f'{self.checkpoints}/{checkpoint}')
         self.net.load_state_dict(states['net'])
         self.optimizer.load_state_dict(states['optimizer'])
-        self.epoch, self.best_epoch, self.min_loss, self.history = states['epoch'] + 1, states['epoch'], states['loss'], states['history']
+        self.epoch, self.best_epoch, self.min_loss, self.history = states['epoch'] + \
+            1, states['epoch'], states['loss'], states['history']
