@@ -38,8 +38,8 @@ if __name__ == '__main__':
     criterion = HuberLoss(args.delta)
     # trainer
     trainer = Trainer(net, optimizer, criterion, args.checkpoints)
+    # load checkpoint
     if args.checkpoint:
-        # load checkpoint
         trainer.load_checkpoint(args.checkpoint)
     # train and validate
     trainer.fit(data[0], data[1], epochs=args.epochs, device=args.gpu)
