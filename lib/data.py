@@ -12,14 +12,16 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class MyDataset(Dataset):
-    def __init__(self, X: torch.Tensor, Y: torch.Tensor, in_hours: list, out_timesteps: int, frequency: int, start: int, end: int):
+    def __init__(self, X: torch.Tensor, Y: torch.Tensor, in_hours: list,
+                 out_timesteps: int, frequency: int, start: int, end: int):
         self.X, self.Y, self.in_hours, self.out_timesteps, self.frequency, self.start, self.end = X, Y, in_hours, out_timesteps, frequency, start, end
 
     def __getitem__(self, index: int):
         t = index + self.start
         h = t // self.frequency
         d = h // 24
-        x = torch.stack([self.X[..., (t - hour * self.frequency):(t - hour * self.frequency + self.frequency)] for hour in self.in_hours])
+        x = torch.stack([self.X[..., (t - hour * self.frequency):(t - hour * self.frequency + self.frequency)]
+                        for hour in self.in_hours])
         y = self.Y[..., t:(t + self.out_timesteps)]
         return x, h % 24, d % 7, y
 
@@ -28,7 +30,8 @@ class MyDataset(Dataset):
 
 
 # load data
-def load_data(file, batch_size: int, in_hours: list, out_timesteps: int, frequency: int, num_workers=0, pin_memory=True):
+def load_data(file, batch_size: int, in_hours: list, out_timesteps: int,
+              frequency: int, num_workers=0, pin_memory=True):
     in_timesteps = frequency * max(in_hours)
     data = torch.from_numpy(np.load(file)['data']).float().transpose(0, -1)  # -> [n_channels, n_nodes, n_timesteps]
     length = data.shape[-1] - in_timesteps - out_timesteps + 1

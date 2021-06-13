@@ -88,7 +88,10 @@ class CAttention(nn.Module):
 class CACN(nn.Module):
     def __init__(self, in_channels, out_channels, n_nodes, n_timesteps):
         super(CACN, self).__init__()
-        self.seq = nn.Sequential(CAttention(n_nodes=n_nodes, n_timesteps=n_timesteps), nn.Conv2d(in_channels, out_channels, 1))
+        self.seq = nn.Sequential(
+            CAttention(
+                n_nodes=n_nodes, n_timesteps=n_timesteps), nn.Conv2d(
+                in_channels, out_channels, 1))
 
     def forward(self, x: torch.Tensor):
         return self.seq(x)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
@@ -151,7 +154,8 @@ class MSGAT(nn.Module):
             self.W = nn.Parameter(torch.zeros(len(components), len(adj), out_timesteps), requires_grad=True)
         self.adj = nn.Parameter(adj, requires_grad=False)
         self.tpcs = nn.ModuleList([
-            TPC(channels=c['channels'], n_nodes=len(adj), in_timesteps=in_timesteps, out_timesteps=out_timesteps, dilations=c['dilations'])
+            TPC(channels=c['channels'], n_nodes=len(adj), in_timesteps=in_timesteps,
+                out_timesteps=out_timesteps, dilations=c['dilations'])
             for c in components
         ])
 
