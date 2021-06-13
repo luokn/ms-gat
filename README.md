@@ -17,48 +17,68 @@
 
     ```bash
     # PEMSD3
-    python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv --nodes 358 --channels 1 \
-        --checkpoints checkpoints/pemsd3 --batch 64 --workers 4 --gpu 0 --in-hours 1,2,3,24
+    python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv \
+        --checkpoints checkpoints/pemsd3 \
+        --nodes 358 --channels 1 --batch 64 --in-hours 1,2,3,24 \
+        --workers 4 --gpu 0
 
     # PEMSD4
-    python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv --nodes 307 --channels 3 \
-        --checkpoints checkpoints/pemsd4 --batch 64 --workers 4 --gpu 0
+    python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv \
+        --checkpoints checkpoints/pemsd4 \
+        --nodes 307 --channels 3 --batch 64 \
+        --workers 4 --gpu 0
 
     # PEMSD7
-    python3 ./main.py --data data/pemsd7/pemsd7.npz --adj data/pemsd7/pemsd7.csv --nodes 883 --channels 1 \
-        --checkpoints checkpoints/pemsd7 --batch 24 --workers 4 --gpu 0
+    python3 ./main.py --data data/pemsd7/pemsd7.npz --adj data/pemsd7/pemsd7.csv \
+        --checkpoints checkpoints/pemsd7 \
+        --nodes 883 --channels 1 --batch 24 \
+        --workers 4 --gpu 0
 
     # PEMSD8
-    python3 ./main.py --data data/pemsd8/pemsd8.npz --adj data/pemsd8/pemsd8.csv --nodes 170 --channels 3 \
-        --checkpoints checkpoints/pemsd8 --batch 64 --workers 4 --gpu 0
+    python3 ./main.py --data data/pemsd8/pemsd8.npz --adj data/pemsd8/pemsd8.csv \
+        --checkpoints checkpoints/pemsd8 \
+        --nodes 170 --channels 3 --batch 64 \
+        --workers 4 --gpu 0
 
     # PEMS-BAY
-    python3 ./main.py --data data/pems-bay/pems-bay.npz --adj data/pems-bay/pems-bay.csv --nodes 325 --channels 1
-        --checkpoints checkpoints/pems-bay --batch 64 --workers 4 --gpu 0 --delta 20
+    python3 ./main.py --data data/pems-bay/pems-bay.npz --adj data/pems-bay/pems-bay.csv \
+        --checkpoints checkpoints/pems-bay \
+        --nodes 325 --channels 1 --batch 64 --delta 20 \
+        --workers 4 --gpu 0
     ```
 
 3. _Train on multiple GPUs:_
 
     ```bash
     # PEMSD3
-    python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv --nodes 358 --channels 1 \
-        --checkpoints checkpoints/pemsd3 --batch 64 --workers 4 --gpus 0,1,2,3 --in-hours 1,2,3,24
+    python3 ./main.py --data data/pemsd3/pemsd3.npz --adj data/pemsd3/pemsd3.csv \
+        --checkpoints checkpoints/pemsd3 --in-hours 1,2,3,24 \
+        --nodes 358 --channels 1 --batch 64 \
+        --workers 4 --gpus 0,1,2,3
 
     # PEMSD4
-    python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv --nodes 307 --channels 3 \
-        --checkpoints checkpoints/pemsd4 --batch 64 --workers 4 --gpus 0,1,2,3
+    python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv \
+        --checkpoints checkpoints/pemsd4 \
+        --nodes 307 --channels 3 --batch 64 \
+        --workers 4 --gpus 0,1,2,3
 
     # PEMSD7
-    python3 ./main.py --data data/pemsd7/pemsd7.npz --adj data/pemsd7/pemsd7.csv --nodes 883 --channels 1 \
-        --checkpoints checkpoints/pemsd7 --batch 64 --workers 4 --gpus 0,1,2,3
+    python3 ./main.py --data data/pemsd7/pemsd7.npz --adj data/pemsd7/pemsd7.csv \
+        --checkpoints checkpoints/pemsd7 \
+         --nodes 883 --channels 1 --batch 64 \
+         --workers 4 --gpus 0,1,2,3
 
     # PEMSD8
-    python3 ./main.py --data data/pemsd8/pemsd8.npz --adj data/pemsd8/pemsd8.csv --nodes 170 --channels 3 \
-        --checkpoints checkpoints/pemsd8 --batch 64 --workers 4 --gpus 0,1,2,3
+    python3 ./main.py --data data/pemsd8/pemsd8.npz --adj data/pemsd8/pemsd8.csv \
+        --checkpoints checkpoints/pemsd8 \
+        --nodes 170 --channels 3 --batch 64 \
+        --workers 4 --gpus 0,1,2,3
 
     # PEMS-BAY
-    python3 ./main.py --data data/pems-bay/pems-bay.npz --adj data/pems-bay/pems-bay.csv --nodes 325 --channels 1 \
-        --checkpoints checkpoints/pems-bay --batch 64 --workers 4 --gpus 0,1,2,3 --delta 20
+    python3 ./main.py --data data/pems-bay/pems-bay.npz --adj data/pems-bay/pems-bay.csv \
+        --checkpoints checkpoints/pems-bay \
+        --nodes 325 --channels 1 --batch 64 --delta 20 \
+        --workers 4 --gpus 0,1,2,3
     ```
 
 \***Checkpoints**
