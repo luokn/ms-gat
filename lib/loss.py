@@ -12,6 +12,10 @@ from torch import nn
 
 
 class HuberLoss(nn.Module):
+    """
+    Implement of huber loss
+    """
+
     def __init__(self, delta=1.0):
         super(HuberLoss, self).__init__()
         self.delta = delta
@@ -20,6 +24,6 @@ class HuberLoss(nn.Module):
         return huber_loss(pred, target, self.delta)
 
 
-def huber_loss(pred: torch.Tensor, target: torch.Tensor, delta=1.0) -> torch.Tensor:
-    l1, l2 = delta * torch.abs(pred - target) - delta**2 / 2,  (pred - target)**2 / 2
-    return torch.where(torch.abs(pred - target) <= delta, l2, l1).mean()
+def huber_loss(output: torch.Tensor, target: torch.Tensor, delta=1.0) -> torch.Tensor:
+    l1, l2 = delta * torch.abs(output - target) - delta**2 / 2, (output - target)**2 / 2
+    return torch.where(torch.abs(output - target) <= delta, l2, l1).mean()

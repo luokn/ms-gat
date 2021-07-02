@@ -48,15 +48,15 @@ class Trainer:
                 for i, batch in enumerate(data_loader):
                     batch = [tensor.cuda(device) for tensor in batch]  # move tensors to device
                     inputs, target = batch[:-1], batch[-1]
-                    pred = self.net(*inputs)
-                    loss = self.criterion(pred, target)
+                    output = self.net(*inputs)
+                    loss = self.criterion(output, target)
                     if train:
                         self.optimizer.zero_grad()
                         loss.backward()
                         self.optimizer.step()
                     total_loss += loss.item()  # update total loss
-                    stats = {'loss': total_loss / (i + 1), **metrics(pred, target)}  # update stats
-                    bar.update(' - '.join([f'{k}:{v:6.2f}' for k, v in stats.items()]))  # update progress bar
+                    stats = {'loss': total_loss / (i + 1), **metrics(output, target)}  # update stats
+                    bar.set_postfix(' - '.join([f'{k}:{v:6.2f}' for k, v in stats.items()]))  # update progress bar
         return stats
 
     def save_history(self):
