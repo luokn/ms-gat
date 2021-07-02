@@ -11,14 +11,21 @@ from time import time
 
 
 class ProgressBar:
-    def __init__(self, total: int):
-        self.stage, self.total, self.time = 0, total, time()
+    def __init__(self, iterable):
+        self.iter, self.total = iter(iterable), len(iterable)
+        self.stage, self.time = 0, time()
 
-    def update(self, postfix='', n=1):
-        self.stage += n
-        delta = timedelta(seconds=int(time() - self.time))
-        progress = '=' * (25 * self.stage // self.total)
-        print(f'\r[{progress:25}] - {self.stage:3d}/{self.total:<3d} - {delta} - {postfix}', end='')
+    def set_postfix(self, postfix):
+        self.stage += 1
+        progress = '=' * int(25 * self.stage / self.total)
+        minutes, seconds = divmod(int(time() - self.time), 60)
+        print(f'\r[{progress:25}] '
+              f'- {self.stage:3d}/{self.total:<3d} '
+              f'- {minutes:02d}:{seconds:02d} '
+              f'- {postfix}', end='')
+
+    def __iter__(self):
+        return self.iter
 
     def __enter__(self):
         return self

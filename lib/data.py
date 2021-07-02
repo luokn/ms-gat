@@ -20,8 +20,10 @@ class MyDataset(Dataset):
         t = index + self.start
         h = t // self.frequency
         d = h // 24
-        x = torch.stack([self.X[..., (t - hour * self.frequency):(t - hour * self.frequency + self.frequency)]
-                        for hour in self.in_hours])
+        x = torch.stack([
+            self.X[..., (t - hour * self.frequency):(t - hour * self.frequency + self.frequency)]
+            for hour in self.in_hours
+        ])
         y = self.Y[..., t:(t + self.out_timesteps)]
         return x, h % 24, d % 7, y
 
