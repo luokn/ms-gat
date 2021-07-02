@@ -46,6 +46,6 @@ if __name__ == '__main__':
     # load best checkpoint
     trainer.load_checkpoint(f'epoch={trainer.best_epoch}_loss={trainer.min_loss:.2f}.pkl')
     # evaluate
-    trainer.evaluate(data[2], device=args.gpu)
+    trainer.evaluate(data[-1], device=args.gpu)
     # save history
     trainer.save_history()

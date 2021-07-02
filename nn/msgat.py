@@ -29,9 +29,9 @@ class GACN(nn.Module):
         self.W = nn.Parameter(torch.zeros(out_channels, in_channels), requires_grad=True)
 
     def forward(self, x: torch.Tensor, adj: torch.Tensor):
-        x = self.gatt(x, adj)  # -> [batch_size, in_channels, n_nodes, n_timesteps]
-        x = x.transpose(1, -1) @ self.W.T  # -> [batch_size, n_timesteps, n_nodes, out_channels]
-        return x.transpose(1, -1)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
+        out = self.gatt(x, adj)  # -> [batch_size, in_channels, n_nodes, n_timesteps]
+        out = out.transpose(1, -1) @ self.W.T  # -> [batch_size, n_timesteps, n_nodes, out_channels]
+        return out.transpose(1, -1)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
 
 
 class TAttention(nn.Module):
@@ -81,7 +81,7 @@ class CAttention(nn.Module):
 
     def forward(self, x: torch.Tensor):
         k = q = torch.einsum('bcit,i->bct', x, self.alpha)  # -> [batch_size, n_channels, n_timesteps]
-        att = torch.softmax(k @ self.Wc @ q.transpose(1, 2), dim=-1)  # [batch_size, n_channels, n_channels]
+        att = torch.softmax(k @ self.Wc @ q.transpose(1, 2), dim=-1)  # -> [batch_size, n_channels, n_channels]
         return torch.einsum('bci,bint->bcnt', att, x)  # -> [batch_size, n_channels, n_nodes, n_timesteps]
 
 
@@ -89,9 +89,9 @@ class CACN(nn.Module):
     def __init__(self, in_channels, out_channels, n_nodes, n_timesteps):
         super(CACN, self).__init__()
         self.seq = nn.Sequential(
-            CAttention(
-                n_nodes=n_nodes, n_timesteps=n_timesteps), nn.Conv2d(
-                in_channels, out_channels, 1))
+            CAttention(n_nodes=n_nodes, n_timesteps=n_timesteps),
+            nn.Conv2d(in_channels, out_channels, 1)
+        )
 
     def forward(self, x: torch.Tensor):
         return self.seq(x)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
@@ -109,10 +109,12 @@ class MEAM(nn.Module):
 
     def forward(self, x: torch.Tensor, adj: torch.Tensor):
         out = self.ln(x)  # -> [batch_size, in_channels, n_nodes, n_timesteps]
-        # -> [batch_size, out_channels, n_nodes, n_timesteps]
-        out = torch.cat([self.cacn(out), self.tacn(out), self.gacn(out, adj)], dim=1)
-        out += self.res(x)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
-        return torch.relu(out)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
+        out = torch.cat([
+            self.cacn(out),  # channel dimension
+            self.tacn(out),  # time dimension
+            self.gacn(out, adj)  # space dimension
+        ], dim=1)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
+        return torch.relu(out + self.res(x))  # -> [batch_size, out_channels, n_nodes, n_timesteps]
 
 
 class TPC(nn.Module):
@@ -141,8 +143,8 @@ class TE(nn.Module):
         self.h_ebd = nn.Embedding(24, n_components * n_nodes * n_timesteps)
 
     def forward(self, H: torch.Tensor, D: torch.Tensor):
-        G = self.h_ebd(H) + self.d_ebd(D)  # [(batch_size * n_components * n_nodes * n_timesteps)]
-        return G.view(len(G), *self.sizes)  # [batch_size, n_components, n_nodes, n_timesteps]
+        G = self.h_ebd(H) + self.d_ebd(D)  # -> [(batch_size * n_components * n_nodes * n_timesteps)]
+        return G.view(len(G), *self.sizes)  # -> [batch_size, n_components, n_nodes, n_timesteps]
 
 
 class MSGAT(nn.Module):
