@@ -44,8 +44,8 @@ class Trainer:
         metrics, total_loss = Metrics(), .0
         with torch.set_grad_enabled(train):  # enable or disable autograd
             self.net.train(train)
-            with ProgressBar(total=len(data_loader)) as bar:
-                for i, batch in enumerate(data_loader):
+            with ProgressBar(data_loader) as bar:
+                for i, batch in enumerate(bar):
                     batch = [tensor.cuda(device) for tensor in batch]  # move tensors to device
                     inputs, target = batch[:-1], batch[-1]
                     output = self.net(*inputs)
