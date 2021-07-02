@@ -24,7 +24,7 @@ if __name__ == '__main__':
     if args.gpus:
         os.environ['CUDA_VISIBLE_DEVICES'] = args.gpus
     # data loaders
-    in_hours = [int(hour) for hour in args.in_hours.split(',')]
+    in_hours = tuple(map(int, args.in_hours.split(',')))
     data = load_data(args.data, args.batch, in_hours, args.out_timesteps, args.frequency, args.workers)
     # adjacency matrix
     adj = load_adj(args.adj, args.nodes)
