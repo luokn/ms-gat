@@ -6,14 +6,14 @@
 # @Date    : 2021/06/02
 # @Time    : 17:14:59
 
-from datetime import timedelta
+
 from time import time
 
 
 class ProgressBar:
     def __init__(self, iterable):
         self.iter, self.total = iter(iterable), len(iterable)
-        self.stage, self.time = 0, time()
+        self.time, self.stage = time(), 0
 
     def set_postfix(self, postfix):
         self.stage += 1
