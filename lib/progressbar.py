@@ -15,7 +15,7 @@ class ProgressBar:
         self.iter, self.total = iter(iterable), len(iterable)
         self.time, self.stage = time(), 0
 
-    def set_postfix(self, postfix):
+    def update(self, postfix):
         self.stage += 1
         progress = '=' * int(25 * self.stage / self.total)
         minutes, seconds = divmod(int(time() - self.time), 60)

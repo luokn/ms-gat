@@ -6,6 +6,7 @@
 # @Date    : 2021/06/02
 # @Time    : 17:41:37
 
+
 import json
 
 import torch
@@ -56,7 +57,7 @@ class Trainer:
                         self.optimizer.step()
                     total_loss += loss.item()  # update total loss
                     stats = {'loss': total_loss / (i + 1), **metrics(output, target)}  # update stats
-                    bar.set_postfix(' - '.join([f'{k}:{v:6.2f}' for k, v in stats.items()]))  # update progress bar
+                    bar.update(postfix=' - '.join([f'{k}:{v:6.2f}' for k, v in stats.items()]))  # update progress bar
         return stats
 
     def save_history(self):
