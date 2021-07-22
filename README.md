@@ -24,12 +24,12 @@
 
 3.  _Train on multiple GPUs:_
 
-        ```bash
-        # PEMSD4
-        python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv \
-            --checkpoints checkpoints/pemsd4 --nodes 307 --channels 3 --batch 64 \
-            --workers 4 --gpus 0,1,2,3
-        ```
+    ```bash
+    # PEMSD4
+    python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv \
+        --checkpoints checkpoints/pemsd4 --nodes 307 --channels 3 --batch 64 \
+        --workers 4 --gpus 0,1,2,3
+    ```
 
 **Paper**
 
