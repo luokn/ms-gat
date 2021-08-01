@@ -1,4 +1,4 @@
-<h2 align="center">Multi-relational Graph Attention Networks for Traffic Interaction Modeling and Prediction</h2>
+<h2 align="center">Multi-correlation Synchronous Graph Attention Networks for Traffic Prediction</h2>
 
 **Data**
 
