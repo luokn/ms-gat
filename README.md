@@ -1,4 +1,4 @@
-<h2 align="center">Multi-correlation Synchronous Graph Attention Networks for Traffic Prediction</h2>
+<h1 align="center">Multi-correlation Synchronous Graph Attention Networks for Traffic Prediction</h1>
 
 **Data**
 
