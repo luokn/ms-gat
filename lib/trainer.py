@@ -24,7 +24,7 @@ class Trainer:
         self.checkpoints = checkpoints
         self.epoch, self.best_epoch, self.min_loss, self.history = 1, 0, float('inf'), [[], [], []]
 
-    def fit(self, data_loader_t, data_loader_v, epochs=100, device=None):
+    def train(self, data_loader_t, data_loader_v, epochs=100, device=None):
         while self.epoch <= epochs:
             print(f"Epoch {self.epoch}/{epochs}")
             stats_t = self._run_epoch(data_loader_t, device, train=True)  # train epoch
