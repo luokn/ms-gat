@@ -42,7 +42,7 @@ if __name__ == '__main__':
     if args.checkpoint:
         trainer.load_checkpoint(args.checkpoint)
     # train and validate
-    trainer.fit(data[0], data[1], epochs=args.epochs, device=args.gpu)
+    trainer.train(data[0], data[1], epochs=args.epochs, device=args.gpu)
     # load best checkpoint
     trainer.load_checkpoint(f'epoch={trainer.best_epoch}_loss={trainer.min_loss:.2f}.pkl')
     # evaluate
