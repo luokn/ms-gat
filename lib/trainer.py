@@ -24,30 +24,30 @@ class Trainer:
         self.checkpoints = checkpoints
         self.epoch, self.best_epoch, self.min_loss, self.history = 1, 0, float('inf'), [[], [], []]
 
-    def train(self, data_loader_t, data_loader_v, epochs=100, device=None):
+    def train(self, data_loader_t, data_loader_v, epochs=100, gpu=None):
         while self.epoch <= epochs:
             print(f"Epoch {self.epoch}/{epochs}")
-            stats_t = self._run_epoch(data_loader_t, device, train=True)  # train epoch
+            stats_t = self._run_epoch(data_loader_t, gpu, train=True)  # train epoch
             self.history[0] += [stats_t]
-            stats_v = self._run_epoch(data_loader_v, device, train=False)  # validate epoch
+            stats_v = self._run_epoch(data_loader_v, gpu, train=False)  # validate epoch
             self.history[1] += [stats_v]
             if self.epoch > 10 and stats_v['loss'] < self.min_loss:
                 self.save_checkpoint(self.epoch, stats_v['loss'])  # save checkpoint
                 self.best_epoch, self.min_loss = self.epoch, stats_v['loss']
             self.epoch += 1
 
-    def evaluate(self, data_loader_e, device=None):
+    def evaluate(self, data_loader_e, gpu=None):
         print('Evaluate')
-        stats_e = self._run_epoch(data_loader_e, device, train=False)  # evaluate
+        stats_e = self._run_epoch(data_loader_e, gpu, train=False)  # evaluate
         self.history[-1] += [stats_e]
 
-    def _run_epoch(self, data_loader, device, train=True):
+    def _run_epoch(self, data_loader, gpu, train=True):
         metrics, total_loss = Metrics(), .0
         with torch.set_grad_enabled(train):  # enable or disable autograd
             self.net.train(train)
             with ProgressBar(data_loader) as bar:
                 for i, batch in enumerate(bar):
-                    batch = [tensor.cuda(device) for tensor in batch]  # move tensors to device
+                    batch = [tensor.cuda(gpu) for tensor in batch]  # move tensors to device
                     inputs, target = batch[:-1], batch[-1]
                     output = self.net(*inputs)
                     loss = self.criterion(output, target)

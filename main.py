@@ -42,10 +42,10 @@ if __name__ == '__main__':
     if args.checkpoint:
         trainer.load_checkpoint(args.checkpoint)
     # train and validate
-    trainer.train(data[0], data[1], epochs=args.epochs, device=args.gpu)
+    trainer.train(data[0], data[1], epochs=args.epochs, gpu=args.gpu)
     # load best checkpoint
     trainer.load_checkpoint(f'epoch={trainer.best_epoch}_loss={trainer.min_loss:.2f}.pkl')
     # evaluate
-    trainer.evaluate(data[-1], device=args.gpu)
+    trainer.evaluate(data[-1], gpu=args.gpu)
     # save history
     trainer.save_history()
