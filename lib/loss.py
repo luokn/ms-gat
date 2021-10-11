@@ -20,8 +20,8 @@ class HuberLoss(nn.Module):
         super(HuberLoss, self).__init__()
         self.delta = delta
 
-    def forward(self, pred: torch.Tensor, target: torch.Tensor):
-        return huber_loss(pred, target, self.delta)
+    def forward(self, output: torch.Tensor, target: torch.Tensor):
+        return huber_loss(output, target, self.delta)
 
 
 def huber_loss(output: torch.Tensor, target: torch.Tensor, delta=1.0) -> torch.Tensor:
