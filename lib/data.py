@@ -6,18 +6,26 @@
 # @Date    : 2021/06/02
 # @Time    : 17:07:20
 
+from typing import List
+
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 
 
 class MyDataset(Dataset):
-    def __init__(self, X: torch.Tensor, Y: torch.Tensor, in_hours: list,
-                 out_timesteps: int, frequency: int, start: int, end: int):
-        self.X, self.Y, self.in_hours, self.out_timesteps, self.frequency, self.start, self.end = X, Y, in_hours, out_timesteps, frequency, start, end
+    def __init__(
+        self, X: torch.Tensor, Y: torch.Tensor,
+        in_hours: list, out_timesteps: int, frequency: int, start: int, end: int
+    ):
+        self.X, self.Y = X, Y
+        self.in_hours = in_hours
+        self.out_timesteps = out_timesteps
+        self.frequency = frequency
+        self.start, self.end = start, end
 
     def __getitem__(self, index: int):
-        t = index + self.start
+        t = torch.tensor(index + self.start)
         h = t // self.frequency
         d = h // 24
         x = torch.stack([
@@ -32,8 +40,25 @@ class MyDataset(Dataset):
 
 
 # load data
-def load_data(file, batch_size: int, in_hours: list, out_timesteps: int,
-              frequency: int, num_workers=0, pin_memory=True):
+def load_data(
+        file: str, batch_size: int, in_hours: list, out_timesteps: int,
+        frequency: int, num_workers=0, pin_memory=True
+) -> List[DataLoader]:
+    """
+    Create data loader for training, validation and evaluation.
+
+    Args:
+        file (str): Data file.
+        batch_size (int): Batch size.
+        in_hours (list): Number of input hours.
+        out_timesteps (int): Number of output timesteps.
+        frequency (int): Timesteps per hour.
+        num_workers (int, optional): Number of workers. Defaults to 0.
+        pin_memory (bool, optional): Pin memory. Defaults to True.
+
+    Returns:
+        List[DataLoader]: Training, validation and evaluation data loader.
+    """
     in_timesteps = frequency * max(in_hours)
     data = torch.from_numpy(np.load(file)['data']).float().transpose(0, -1)  # -> [n_channels, n_nodes, n_timesteps]
     length = data.shape[-1] - in_timesteps - out_timesteps + 1
@@ -50,10 +75,19 @@ def load_data(file, batch_size: int, in_hours: list, out_timesteps: int,
     ]
 
 
-def load_adj(file, n_nodes: int):  # load adjacency matrix
+def load_adj(file: str, n_nodes: int) -> torch.Tensor:  #
     r"""
+    Load adjacency matrix from adjacency file.
+
     .. math::
         \tilde A = \tilde{D}^{-1/2} (A + I_n) \tilde{D}^{-1/2}
+
+    Args:
+        file (str): Adjacency file.
+        n_nodes (int): Number of nodes.
+
+    Returns:
+        torch.Tensor: Adjacency matrix.
     """
     A = torch.eye(n_nodes)
     for line in open(file, 'r').readlines()[1:]:
@@ -65,6 +99,6 @@ def load_adj(file, n_nodes: int):  # load adjacency matrix
     return D_rsqrt @ A @ D_rsqrt
 
 
-def normalize(tensor: torch.Tensor, split: int):
+def normalize(tensor: torch.Tensor, split: int) -> torch.Tensor:
     std, mean = torch.std_mean(tensor[..., :split], dim=-1, keepdim=True)
     return (tensor - mean) / std

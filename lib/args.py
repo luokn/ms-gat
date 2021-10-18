@@ -6,10 +6,13 @@
 # @Date    : 2021/06/08
 # @Time    : 11:21:24
 
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 
 
-def parse_args():  # parse arguments
+def parse_args() -> Namespace:
+    """
+    Parse command line arguments.
+    """
     parser = ArgumentParser(description="Train MS-GAT")
 
     parser.add_argument('--data', type=str, help='Data file')
