@@ -11,14 +11,14 @@ import torch
 
 class Metrics:
     """
-    MAE, MAPE, RMSE
+    Calculate and update ``MAE/MAPE/RMSE`` with the training batch.
     """
 
     def __init__(self, mask_value=.0):
         self.n, self.mask_value = 0, mask_value
         self.AE, self.APE, self.SE = .0, .0, .0
 
-    def __call__(self, output: torch.Tensor, target: torch.Tensor):
+    def __call__(self, output: torch.Tensor, target: torch.Tensor) -> dict:
         self.n += target.nelement()
         # MAE
         self.AE += torch.abs(output - target).sum().item()

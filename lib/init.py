@@ -10,6 +10,15 @@ from torch import nn
 
 
 def init_network(net: nn.Module) -> nn.Module:
+    """
+    Use ``xavier_normal_`` or ``uniform_`` to initialize the parameters of the network
+
+    Args:
+        net (nn.Module): Neural network to initialize.
+
+    Returns:
+        nn.Module: net.
+    """
     for param in net.parameters():
         if param.requires_grad:
             if param.ndim >= 2:
