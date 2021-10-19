@@ -12,9 +12,9 @@ from torch.nn import DataParallel
 from torch.optim import Adam
 
 from lib import HuberLoss, Trainer, init_network, load_adj, load_data, parse_args
-from nn import msgat48, msgat72, msgat96
+from nn import ms_gat48, ms_gat72, ms_gat96
 
-models = {'msgat': msgat72, 'msgat48': msgat48, 'msgat72': msgat72, 'msgat96': msgat96}
+models = {'ms-gat': ms_gat72, 'ms-gat48': ms_gat48, 'ms-gat72': ms_gat72, 'ms-gat96': ms_gat96}
 
 if __name__ == '__main__':
     # parser arguments
