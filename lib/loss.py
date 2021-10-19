@@ -48,8 +48,50 @@ def huber_loss(output: torch.Tensor, target: torch.Tensor, delta=1.0) -> torch.T
         delta (float, optional): Defaults to 1.0.
 
     Returns:
-        torch.Tensor: [description]
+        torch.Tensor: loss
     """
-    nn.L1Loss
     l1, l2 = delta * torch.abs(output - target) - delta**2 / 2, (output - target)**2 / 2
     return torch.where(torch.abs(output - target) <= delta, l2, l1).mean()
+
+
+class GaussLoss(nn.Module):
+    """
+    Pytorch Implement of gauss loss.
+
+    Args:
+        sigma (float, optional): Defaults to 1.0.
+        delta (float, optional): Defaults to 5e-2.
+    """
+
+    def __init__(self, sigma=1.0, delta=5e-2):
+        super(GaussLoss, self).__init__()
+        self.sigma, self.delta = sigma, delta
+
+    def forward(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        return gauss_loss(output, target, self.sigma, self.delta)
+
+    def extra_repr(self) -> str:
+        return f'sigma={self.sigma}, delta={self.delta}'
+
+
+def gauss_loss(output: torch.Tensor, target: torch.Tensor, sigma=1.0, delta=5e-2) -> torch.Tensor:
+    r"""
+    Gauss loss function.
+
+    .. math::
+    \begin{equation}
+        \mathcal{L}_{\sigma,\delta}(\mathcal{Y}, \hat{\mathcal{Y}}) =
+        \sigma^2 \left( 1 - \exp \{-\frac{(\mathcal{Y} - \hat{\mathcal{Y}}) ^2}{2 \sigma^2} \} \right) + \delta \left | \mathcal{Y} - \hat{\mathcal{Y}} \right |
+    \end{equation}
+
+    Args:
+        output (torch.Tensor): Network output.
+        target (torch.Tensor): Ground truth.
+        sigma (float, optional): Defaults to 1.0.
+        delta (float, optional): Defaults to 5e-2.
+
+    Returns:
+        torch.Tensor: loss
+    """
+    abs = torch.abs(output - target)
+    return sigma**2 * torch.mean(1 - torch.exp(-abs**2 / (2 * sigma**2))) + delta * abs
