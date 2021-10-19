@@ -24,5 +24,6 @@ def init_network(net: nn.Module) -> nn.Module:
             if param.ndim >= 2:
                 nn.init.xavier_normal_(param)
             else:
-                nn.init.uniform_(param)
+                f_out = param.size(0)
+                nn.init.uniform_(param, -f_out**-.5, f_out**-.5)
     return net
