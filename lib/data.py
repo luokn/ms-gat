@@ -67,10 +67,10 @@ def load_data(
         [in_timesteps + split2, in_timesteps + length]
     ]
     normalized_data = normalize(data, split=in_timesteps + split1)
-    return (
+    return [
         DataLoader(MyDataset(X=normalized_data, Y=data[0], in_hours=in_hours, out_timesteps=out_timesteps, frequency=frequency, start=start, end=end),
                    batch_size=batch_size, shuffle=i == 0, num_workers=num_workers, pin_memory=pin_memory) for i, (start, end) in enumerate(ranges)
-    )
+    ]
 
 
 def load_adj(file: str, n_nodes: int) -> torch.Tensor:
