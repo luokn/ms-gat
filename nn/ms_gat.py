@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 # @Author  : Kun Luo
 # @Email   : olooook@outlook.com
-# @File    : msgat.py
+# @File    : ms_gat.py
 # @Date    : 2021/06/02
 # @Time    : 20:56:11
 
+from typing import List
 
 import torch
 from torch import nn
@@ -15,7 +16,7 @@ from .embedding import TE
 
 
 class GACN(nn.Module):
-    def __init__(self, in_channels, out_channels, n_timesteps):
+    def __init__(self, in_channels: int, out_channels: int, n_timesteps: int):
         super(GACN, self).__init__()
         self.in_channels, self.out_channels, self.n_timesteps = in_channels, out_channels, n_timesteps
         self.gatt = GAttention(n_channels=in_channels, n_timesteps=n_timesteps)
@@ -54,7 +55,7 @@ class Chomp(nn.Module):
 
 
 class TACN(nn.Module):
-    def __init__(self, in_channels, out_channels, n_nodes, dilations):
+    def __init__(self, in_channels: int, out_channels: int, n_nodes: int, dilations: List[int]):
         super(TACN, self).__init__()
         self.in_channels, self.out_channels, self.n_nodes, self.dilations = in_channels, out_channels, n_nodes, dilations
         channels = [in_channels] + [out_channels] * len(dilations)
@@ -66,7 +67,7 @@ class TACN(nn.Module):
             ]
         self.seq = nn.Sequential(*seq)
 
-    def forward(self, signals: torch.Tensor):
+    def forward(self, signals: torch.Tensor) -> torch.Tensor:
         return self.seq(signals)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
 
     def extra_repr(self) -> str:
@@ -74,7 +75,7 @@ class TACN(nn.Module):
 
 
 class CACN(nn.Module):
-    def __init__(self, in_channels, out_channels, n_nodes, n_timesteps):
+    def __init__(self, in_channels: int, out_channels: int, n_nodes: int, n_timesteps: int):
         super(CACN, self).__init__()
         self.in_channels, self.out_channels, self.n_nodes, self.n_timesteps = in_channels, out_channels, n_nodes, n_timesteps
         self.seq = nn.Sequential(
@@ -82,7 +83,7 @@ class CACN(nn.Module):
             nn.Conv2d(in_channels, out_channels, 1)
         )
 
-    def forward(self, signals: torch.Tensor):
+    def forward(self, signals: torch.Tensor) -> torch.Tensor:
         return self.seq(signals)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
 
     def extra_repr(self) -> str:
@@ -90,7 +91,7 @@ class CACN(nn.Module):
 
 
 class MEAM(nn.Module):
-    def __init__(self, in_channels, out_channels, n_nodes, n_timesteps, dilations):
+    def __init__(self, in_channels: int, out_channels: int, n_nodes: int, n_timesteps: int, dilations: List[int]):
         assert out_channels % 3 == 0
         super(MEAM, self).__init__()
         self.in_channels, self.out_channels, self.n_nodes, self.n_timesteps, self.dilations = in_channels, out_channels, n_nodes, n_timesteps, dilations
@@ -114,7 +115,7 @@ class MEAM(nn.Module):
 
 
 class TPC(nn.Module):
-    def __init__(self, channels, n_nodes, in_timesteps, out_timesteps, dilations):
+    def __init__(self, channels: List[int], n_nodes: int, in_timesteps: int, out_timesteps: int, dilations: List[int]):
         super(TPC, self).__init__()
         self.channels, self.n_nodes, self.in_timesteps, self.out_timesteps, self.dilations = channels, n_nodes, in_timesteps, out_timesteps, dilations
         self.tgacns = nn.ModuleList([
@@ -126,17 +127,36 @@ class TPC(nn.Module):
     def forward(self, signals: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
         for tgacn in self.tgacns:
             signals = tgacn(signals, adjacency)
-        signals = self.ln(signals)  # -> [batch_size, out_channels, n_nodes, in_timesteps]
-        signals = self.fc(signals.transpose(1, 3))  # -> [batch_size, out_timesteps, n_nodes, 1]
-        return signals[..., 0].transpose(1, 2)  # -> [batch_size, n_nodes, out_timesteps]
+        output = self.ln(signals)  # -> [batch_size, out_channels, n_nodes, in_timesteps]
+        output = self.fc(output.transpose(1, 3))  # -> [batch_size, out_timesteps, n_nodes, 1]
+        return output[..., 0].transpose(1, 2)  # -> [batch_size, n_nodes, out_timesteps]
 
     def extra_repr(self) -> str:
         return f'channels={self.channels}, n_nodes={self.n_nodes}, in_timesteps={self.in_timesteps}, out_timesteps={self.out_timesteps}, dilations={self.dilations}'
 
 
-class MSGAT(nn.Module):
-    def __init__(self, components, in_timesteps, out_timesteps, adjacency, use_te=True):
-        super(MSGAT, self).__init__()
+class MS_GAT(nn.Module):
+    """
+    The MS-GAT Model.
+
+    Args:
+        components (list): Configurations for the components.
+        in_timesteps (int): Number of input timesteps.
+        out_timesteps (int): Number of outpuy timesteps.
+        adjacency (torch.Tensor): Adjacency matrix.
+        use_te (bool, optional): Use TE. Defaults to True.
+
+    Shape:
+        X: ``[batch_size, n_channels, n_nodes, in_timesteps]``
+        H: ``[batch_size]``
+        D: ``[batch_size]``
+        output: ``[batch_size, n_nodes, out_timesteps]``
+    """
+
+    def __init__(
+            self, components: List[dict], in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
+    ):
+        super(MS_GAT, self).__init__()
         if use_te:
             self.te = TE(len(components), len(adjacency), out_timesteps)
         else:
@@ -157,18 +177,21 @@ def ms_gat96(
     n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
 ):
     components = [{"channels": [in_channels, 48, 48], "dilations":[[1, 2], [2, 4]]}] * n_components
-    return MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
+    return MS_GAT(components, in_timesteps=in_timesteps,
+                  out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
 
 
 def ms_gat72(
     n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
 ):
     components = [{"channels": [in_channels, 72, 72], "dilations":[[1, 2], [2, 4]]}] * n_components
-    return MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
+    return MS_GAT(components, in_timesteps=in_timesteps,
+                  out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
 
 
 def ms_gat48(
     n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
 ):
     components = [{"channels": [in_channels, 96, 96], "dilations":[[1, 1, 2, 2], [4, 4]]}] * n_components
-    return MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
+    return MS_GAT(components, in_timesteps=in_timesteps,
+                  out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
