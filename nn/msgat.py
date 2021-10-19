@@ -19,7 +19,7 @@ class GACN(nn.Module):
         super(GACN, self).__init__()
         self.in_channels, self.out_channels, self.n_timesteps = in_channels, out_channels, n_timesteps
         self.gatt = GAttention(n_channels=in_channels, n_timesteps=n_timesteps)
-        self.W = nn.Parameter(torch.zeros(out_channels, in_channels), requires_grad=True)
+        self.W = nn.Parameter(torch.Tensor(out_channels, in_channels), requires_grad=True)
 
     def forward(self, signals: torch.Tensor, adjacency: torch.Tensor) -> torch.Tensor:
         output = self.gatt(signals, adjacency)  # -> [batch_size, in_channels, n_nodes, n_timesteps]
@@ -139,37 +139,40 @@ class TPC(nn.Module):
 
 
 class MSGAT(nn.Module):
-    def __init__(self, components, in_timesteps, out_timesteps, adj, te=True):
+    def __init__(self, components, in_timesteps, out_timesteps, adjacency, use_te=True):
         super(MSGAT, self).__init__()
-        if te:
-            self.te = TE(len(components), len(adj), out_timesteps)
+        if use_te:
+            self.te = TE(len(components), len(adjacency), out_timesteps)
         else:
-            self.W = nn.Parameter(torch.zeros(len(components), len(adj), out_timesteps), requires_grad=True)
-        self.adj = nn.Parameter(adj, requires_grad=False)
+            self.W = nn.Parameter(torch.Tensor(len(components), len(adjacency), out_timesteps), requires_grad=True)
+        self.adj = nn.Parameter(adjacency, requires_grad=False)
         self.tpcs = nn.ModuleList([
-            TPC(channels=c['channels'], n_nodes=len(adj), in_timesteps=in_timesteps,
-                out_timesteps=out_timesteps, dilations=c['dilations'])
-            for c in components
+            TPC(
+                channels=c['channels'], n_nodes=len(adjacency), in_timesteps=in_timesteps, out_timesteps=out_timesteps, dilations=c['dilations']
+            ) for c in components
         ])
 
     def forward(self, X: torch.Tensor, H: torch.Tensor, D: torch.Tensor) -> torch.Tensor:
-        G = self.te(H, D).unbind(1) if self.te else self.W.unbind()
+        G = self.te(H, D).unbind(1) if self.te is not None else self.W.unbind()
         return sum((tpc(x, self.adj) * g for tpc, x, g in zip(self.tpcs, X.unbind(1), G)))
 
 
-def msgat96(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+def msgat96(
+    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
+):
     components = [{"channels": [in_channels, 48, 48], "dilations":[[1, 2], [2, 4]]}] * n_components
-    net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
-    return net
+    return MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
 
 
-def msgat72(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+def msgat72(
+    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
+):
     components = [{"channels": [in_channels, 72, 72], "dilations":[[1, 2], [2, 4]]}] * n_components
-    net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
-    return net
+    return MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
 
 
-def msgat48(n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adj: torch.Tensor, te=True):
+def msgat48(
+    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
+):
     components = [{"channels": [in_channels, 96, 96], "dilations":[[1, 1, 2, 2], [4, 4]]}] * n_components
-    net = MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adj=adj, te=te)
-    return net
+    return MSGAT(components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te)
