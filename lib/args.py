@@ -29,8 +29,8 @@ def parse_args() -> Namespace:
     parser.add_argument('--gpu', type=int, default=None, help='GPU')
     parser.add_argument('--gpus', type=str, default=None, help='GPUs')
 
-    parser.add_argument('--model', type=str, default='msgat', help='Model name')
-    parser.add_argument('--no-te', type=bool, default=False, help='No time embedding')
+    parser.add_argument('--model', type=str, default='ms-gat', help='Model name')
+    parser.add_argument('--use-te', type=bool, default=True, help='Use time embedding')
     parser.add_argument('--frequency', type=int, default=12, help='Time steps per hour')
     parser.add_argument('--in-hours', type=str, default='1,2,3,24,168', help='Hours of sampling')
     parser.add_argument('--out-timesteps', type=int, default=12, help='Number of output timesteps')

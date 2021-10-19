@@ -94,4 +94,4 @@ def gauss_loss(output: torch.Tensor, target: torch.Tensor, sigma=1.0, delta=5e-2
         torch.Tensor: loss
     """
     abs = torch.abs(output - target)
-    return sigma**2 * torch.mean(1 - torch.exp(-abs**2 / (2 * sigma**2))) + delta * abs
+    return sigma**2 * torch.mean(1 - torch.exp(-abs**2 / (2 * sigma**2))) + delta * torch.mean(abs)
