@@ -6,7 +6,7 @@
 # @Date    : 2021/06/02
 # @Time    : 17:07:20
 
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import torch
@@ -15,8 +15,7 @@ from torch.utils.data import DataLoader, Dataset
 
 class MyDataset(Dataset):
     def __init__(
-        self, X: torch.Tensor, Y: torch.Tensor,
-        in_hours: list, out_timesteps: int, frequency: int, start: int, end: int
+        self, X: torch.Tensor, Y: torch.Tensor, in_hours: List[int], out_timesteps: int, frequency: int, start: int, end: int
     ):
         self.X, self.Y = X, Y
         self.in_hours = in_hours
@@ -24,7 +23,7 @@ class MyDataset(Dataset):
         self.frequency = frequency
         self.start, self.end = start, end
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         t = torch.tensor(index + self.start)
         h = t // self.frequency
         d = h // 24
@@ -35,17 +34,16 @@ class MyDataset(Dataset):
         y = self.Y[..., t:(t + self.out_timesteps)]
         return x, h % 24, d % 7, y
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.end - self.start
 
 
 # load data
 def load_data(
-        file: str, batch_size: int, in_hours: list, out_timesteps: int,
-        frequency: int, num_workers=0, pin_memory=True
-) -> List[DataLoader]:
+        file: str, batch_size: int, in_hours: List[int], out_timesteps: int, frequency: int, num_workers=0, pin_memory=True
+) -> Tuple[DataLoader]:
     """
-    Create data loader for training, validation and evaluation.
+    Create data loaders for training, validation and evaluation.
 
     Args:
         file (str): Data file.
@@ -69,13 +67,13 @@ def load_data(
         [in_timesteps + split2, in_timesteps + length]
     ]
     normalized_data = normalize(data, split=in_timesteps + split1)
-    return [
+    return (
         DataLoader(MyDataset(X=normalized_data, Y=data[0], in_hours=in_hours, out_timesteps=out_timesteps, frequency=frequency, start=start, end=end),
                    batch_size=batch_size, shuffle=i == 0, num_workers=num_workers, pin_memory=pin_memory) for i, (start, end) in enumerate(ranges)
-    ]
+    )
 
 
-def load_adj(file: str, n_nodes: int) -> torch.Tensor:  #
+def load_adj(file: str, n_nodes: int) -> torch.Tensor:
     r"""
     Load adjacency matrix from adjacency file.
 
