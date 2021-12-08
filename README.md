@@ -31,16 +31,6 @@
         --workers 4 --gpus 0,1,2,3
     ```
 
-**Paper**
-
--   [arxiv](https://arxiv.org/)
-
-**Citation**
-
-```latex
-...
-```
-
 **_Checkpoints_**
 
 -   _PEMSD3, 2080TI-11G:_ [<img src="https://img.shields.io/badge/PEMSD3-MAE=15.60_MAPE=16.36_RMSE=26.36-4EAA25?style=flat-square"/>](https://drive.google.com/file/d/16bUCaI4p23vTGdMOXRRT45TNqci7VLCi/view?usp=sharing)
