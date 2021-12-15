@@ -13,23 +13,25 @@
 
         ```bash
         # PEMSD4
-        python3 ./main.py train -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/debug \
-            -n 307 -c 3 -b 64 -j 4
+        python3 ./main.py train -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz \
+            -o checkpoints/pemsd4/debug -n 307 -c 3 -b 64 -j 4
         ```
 
     -   multiple GPUs:
 
         ```bash
         # PEMSD4
-        python3 ./main.py train -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/debug \ -n 307 -c 3 -b 64 -j 4 --gpus 0,1,2,3
+        python3 ./main.py train -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz \
+            -o checkpoints/pemsd4/debug -n 307 -c 3 -b 64 -j 4 --gpus 0,1,2,3
         ```
 
 2.  _Evaluate_
 
     ```bash
     # PEMSD4
-    python3 ./main.py eval -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/debug \
-        -n 307 -c 3 -b 64 -j 4 -f checkpoints/pemsd4/debug/xx_loss\=xxx.xx.pkl
+    python3 ./main.py eval -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz \
+        -o checkpoints/pemsd4/debug -n 307 -c 3 -b 64 -j 4 \
+        -f checkpoints/pemsd4/debug/xx_loss\=xxx.xx.pkl
     ```
 
 **_Checkpoints_**
