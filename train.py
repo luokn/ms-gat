@@ -32,7 +32,6 @@ models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.
 @click.option("--model", type=click.Choice(models.keys()), help="Model.", default="ms-gat")
 @click.option("--gpus", type=str, help="GPUs.", default="0")
 @click.option("--delta", type=float, help="Huber loss delta.", default=60)
-@click.option("--weight-decay", type=float, help="Adam weight decay.", default=0)
 @click.option("--te/--no-te", help="With/without time embedding.", default=True)
 @click.option("--out-timesteps", type=int, help="Number of output timesteps.", default=12)
 @click.option("--timesteps-per-hour", type=int, help="Timesteps per hour.", default=12)
@@ -48,7 +47,6 @@ def train(
     batch_size,
     min_epochs,
     max_epochs,
-    weight_decay,
     model,
     gpus,
     delta,
@@ -85,21 +83,17 @@ def train(
         model=net,
         out_dir=out_dir,
         delta=delta,
-        weight_decay=weight_decay,
         max_epochs=max_epochs,
         min_epochs=min_epochs,
+        patience=20,
+        min_delta=1e-4,
     )
     if ckpt_file is not None:
         trainer.load(ckpt_file=ckpt_file)
     trainer.fit((data_loaders[0], data_loaders[1]), gpu=gpus[0])
     print("Training completed!")
     # eval
-    evaluator = Evaluator(
-        model=net,
-        out_dir=out_dir,
-        ckpt_file=trainer.out_dir / trainer.best["ckpt"],
-        delta=delta,
-    )
+    evaluator = Evaluator(model=net, out_dir=out_dir, ckpt_file=trainer.out_dir / trainer.best["ckpt"], delta=delta)
     evaluator.eval(data_loaders[-1], gpu=gpus[0])
 
 

@@ -21,24 +21,19 @@ from torch.utils.data import DataLoader
 
 from models.loss import HuberLoss
 
+LR = 1e-3
+STEP_SIZE = 20
+GAMMA = 0.5
+
 
 class Trainer:
     def __init__(
-        self,
-        model: Module,
-        out_dir: str,
-        *,
-        delta: float,
-        weight_decay: float,
-        max_epochs: int = 100,
-        min_epochs: int = 10,
-        patience: int = 15,
-        min_delta: float = 5e-4,
+        self, model: Module, out_dir: str, delta: float, max_epochs: int, min_epochs: int, patience: int, min_delta: int
     ):
         self.model = model
         self.criterion = HuberLoss(delta)
-        self.optimizer = Adam(model.parameters(), lr=1e-3, weight_decay=weight_decay)
-        self.scheduler = StepLR(self.optimizer, step_size=20, gamma=0.5)
+        self.optimizer = Adam(model.parameters(), lr=LR)
+        self.scheduler = StepLR(self.optimizer, step_size=STEP_SIZE, gamma=GAMMA)
         self.out_dir = Path(out_dir)
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
@@ -49,7 +44,7 @@ class Trainer:
         self.logger = Logger(self.out_dir / ".log")
         self.grad_scaler = GradScaler()
 
-    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu: Optional[int] = None):
+    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu: int):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
             # train and validate.
@@ -71,7 +66,7 @@ class Trainer:
                     break
             self.epoch += 1
 
-    def save(self, ckpt_file: str):
+    def save(self, ckpt_file):
         click.echo(f"• Save checkpoint {ckpt_file}")
         states = dict(
             best=self.best,
@@ -83,7 +78,7 @@ class Trainer:
         )
         torch.save(states, ckpt_file)
 
-    def load(self, ckpt_file: str):
+    def load(self, ckpt_file):
         click.echo(f"• Load checkpoint {ckpt_file}")
         states = torch.load(ckpt_file)
         self.best = states["best"]
@@ -94,12 +89,12 @@ class Trainer:
         self.grad_scaler.load_state_dict(states["grad_scaler"])
 
     @torch.enable_grad()
-    def train_epoch(self, data_loader: DataLoader, gpu: Optional[int]) -> dict:
+    def train_epoch(self, data_loader: DataLoader, gpu: int) -> dict:
         self.model.train()
         return self.__run_epoch(data_loader, gpu, label="[Train   ]", train=True)
 
     @torch.no_grad()
-    def validate_epoch(self, data_loader: DataLoader, gpu: Optional[int]) -> dict:
+    def validate_epoch(self, data_loader: DataLoader, gpu: int) -> dict:
         self.model.eval()
         return self.__run_epoch(data_loader, gpu, label="[Validate]", train=False)
 
@@ -145,7 +140,7 @@ class Evaluator:
             self.out_dir.mkdir(parents=True)
 
     @torch.no_grad()
-    def eval(self, data_loader: DataLoader, gpu: Optional[int] = None):
+    def eval(self, data_loader: DataLoader, gpu: int):
         self.model.eval()
         L_acc, L_ave, metrics = 0.0, 0.0, Metrics()
         with click.progressbar(length=len(data_loader), label="[Evaluate]", item_show_func=show_item, width=25) as bar:
