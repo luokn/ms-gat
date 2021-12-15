@@ -6,15 +6,15 @@
 # @Date    : 2021/06/02
 # @Time    : 20:56:11
 
+
 from typing import List
 
 import torch
 from torch import nn
-from torch.nn.modules import module
+from torch.nn import init
 
 from .att import ChannelAttention, GraphAttention, TemporalAttention
 from .ebd import TE
-from .init import init_network
 
 
 class GACN(nn.Module):
@@ -194,64 +194,59 @@ class MSGAT(nn.Module):
         self.tpcs = nn.ModuleList(
             [
                 TPC(
-                    channels=c["channels"],
+                    channels=component["channels"],
                     n_nodes=len(adjacency),
                     in_timesteps=in_timesteps,
                     out_timesteps=out_timesteps,
-                    dilations=c["dilations"],
+                    dilations=component["dilations"],
                 )
-                for c in components
+                for component in components
             ]
         )
+        self.reset_parameters()
 
     def forward(self, X: torch.Tensor, H: torch.Tensor, D: torch.Tensor) -> torch.Tensor:
         G = self.te(H, D).unbind(1) if self.te is not None else self.W.unbind()
         return sum((tpc(x, self.adj) * g for tpc, x, g in zip(self.tpcs, X.unbind(1), G)))
 
+    def reset_parameters(self):
+        """
+        Use ``xavier_normal_`` or ``uniform_`` to initialize the parameters of the network
+        """
+        for param in self.parameters():
+            if param.requires_grad:
+                if param.ndim >= 2:
+                    init.xavier_normal_(param)
+                else:
+                    f_out = param.size(0)
+                    init.uniform_(param, -(f_out ** -0.5), f_out ** -0.5)
+
 
 def msgat96(
-    n_components: int,
-    in_channels: int,
-    in_timesteps: int,
-    out_timesteps: int,
-    adjacency: torch.Tensor,
-    use_te=True,
-    init_params=True,
+    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
 ):
     components = [{"channels": [in_channels, 48, 48], "dilations": [[1, 2], [2, 4]]}] * n_components
-    model = MSGAT(
+    msgat = MSGAT(
         components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te
     )
-    return init_network(model) if init_params else model
+    return msgat
 
 
 def msgat72(
-    n_components: int,
-    in_channels: int,
-    in_timesteps: int,
-    out_timesteps: int,
-    adjacency: torch.Tensor,
-    use_te=True,
-    init_params=True,
+    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
 ):
     components = [{"channels": [in_channels, 72, 72], "dilations": [[1, 2], [2, 4]]}] * n_components
-    model = MSGAT(
+    msgat = MSGAT(
         components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te
     )
-    return init_network(model) if init_params else model
+    return msgat
 
 
 def msgat48(
-    n_components: int,
-    in_channels: int,
-    in_timesteps: int,
-    out_timesteps: int,
-    adjacency: torch.Tensor,
-    use_te=True,
-    init_params=True,
+    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
 ):
     components = [{"channels": [in_channels, 96, 96], "dilations": [[1, 1, 2, 2], [4, 4]]}] * n_components
-    model = MSGAT(
+    msgat = MSGAT(
         components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te
     )
-    return init_network(model) if init_params else model
+    return msgat
