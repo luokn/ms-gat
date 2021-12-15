@@ -1,4 +1,4 @@
-<h1 align="center">Multi-relational Graph Attention Networks for Traffic Signal Coupling Learning and Prediction</h1>
+<h2 align="center">Multi-relational Graph Attention Networks for Traffic Signal Coupling Learning and Prediction</h2>
 
 **Data**
 
@@ -7,18 +7,29 @@
 
 **Usage**
 
--   _Train on a single GPU:_
+1.  _Train_
+
+    -   single GPU:
+
+        ```bash
+        # PEMSD4
+        python3 ./main.py train -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/debug \
+            -n 307 -c 3 -b 64 -j 4
+        ```
+
+    -   multiple GPUs:
+
+        ```bash
+        # PEMSD4
+        python3 ./main.py train -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/debug \ -n 307 -c 3 -b 64 -j 4 --gpus 0,1,2,3
+        ```
+
+2.  _Evaluate_
 
     ```bash
     # PEMSD4
-    python3 ./main.py -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/exp0 -n 307 -c 3 -b 64 -j 4
-    ```
-
--   _Train on multiple GPUs:_
-
-    ```bash
-    # PEMSD4
-    python3 ./main.py -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/exp1 -n 307 -c 3 -b 64 -j 4 --gpus 0,1,2,3
+    python3 ./main.py eval -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/debug \
+        -n 307 -c 3 -b 64 -j 4 -f checkpoints/pemsd4/debug/xx_loss\=xxx.xx.pkl
     ```
 
 **_Checkpoints_**
