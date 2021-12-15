@@ -38,4 +38,4 @@ class TE(nn.Module):
         return G.view(len(G), self.n_components, self.n_nodes, self.n_timesteps)
 
     def extra_repr(self) -> str:
-        return f'n_components={self.n_components}, n_nodes={self.n_nodes}, n_timesteps={self.n_timesteps}'
+        return f"n_components={self.n_components}, n_nodes={self.n_nodes}, n_timesteps={self.n_timesteps}"
