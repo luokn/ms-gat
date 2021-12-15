@@ -13,9 +13,16 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 
-class MyDataset(Dataset):
+class TimeSeriesSliceDataset(Dataset):
     def __init__(
-        self, X: torch.Tensor, Y: torch.Tensor, in_hours: List[int], out_timesteps: int, frequency: int, start: int, end: int
+        self,
+        X: torch.Tensor,
+        Y: torch.Tensor,
+        in_hours: List[int],
+        out_timesteps: int,
+        frequency: int,
+        start: int,
+        end: int,
     ):
         self.X, self.Y = X, Y
         self.in_hours = in_hours
@@ -24,14 +31,16 @@ class MyDataset(Dataset):
         self.start, self.end = start, end
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        t = torch.tensor(index + self.start)
-        h = t // self.frequency
-        d = h // 24
-        x = torch.stack([
-            self.X[..., (t - hour * self.frequency):(t - hour * self.frequency + self.frequency)]
-            for hour in self.in_hours
-        ])
-        y = self.Y[..., t:(t + self.out_timesteps)]
+        t = torch.tensor(index + self.start).long()
+        h = torch.floor(t / self.frequency).long()
+        d = torch.floor(h / 24).long()
+        x = torch.stack(
+            [
+                self.X[..., (t - hour * self.frequency) : (t - hour * self.frequency + self.frequency)]
+                for hour in self.in_hours
+            ]
+        )
+        y = self.Y[..., t : (t + self.out_timesteps)]
         return x, h % 24, d % 7, y
 
     def __len__(self) -> int:
@@ -40,7 +49,13 @@ class MyDataset(Dataset):
 
 # load data
 def load_data(
-        file: str, batch_size: int, in_hours: List[int], out_timesteps: int, frequency: int, num_workers=0, pin_memory=True
+    data_file: str,
+    batch_size: int,
+    in_hours: List[int],
+    out_timesteps: int,
+    timesteps_per_hour: int,
+    num_workers=0,
+    pin_memory=True,
 ) -> Tuple[DataLoader]:
     """
     Create data loaders for training, validation and evaluation.
@@ -50,30 +65,46 @@ def load_data(
         batch_size (int): Batch size.
         in_hours (list): Number of input hours.
         out_timesteps (int): Number of output timesteps.
-        frequency (int): Timesteps per hour.
+        timesteps_per_hour (int): Timesteps per hour.
         num_workers (int, optional): Number of workers. Defaults to 0.
         pin_memory (bool, optional): Pin memory. Defaults to True.
 
     Returns:
         List[DataLoader]: Training, validation and evaluation data loader.
     """
-    in_timesteps = frequency * max(in_hours)
-    data = torch.from_numpy(np.load(file)['data']).float().transpose(0, -1)  # -> [n_channels, n_nodes, n_timesteps]
+    in_timesteps = timesteps_per_hour * max(in_hours)
+    data = (
+        torch.from_numpy(np.load(data_file)["data"]).float().transpose(0, -1)
+    )  # -> [n_channels, n_nodes, n_timesteps]
     length = data.shape[-1] - in_timesteps - out_timesteps + 1
-    split1, split2 = int(.6 * length), int(.8 * length)
+    split1, split2 = int(0.6 * length), int(0.8 * length)
     ranges = [
         [in_timesteps, in_timesteps + split1],
         [in_timesteps + split1, in_timesteps + split2],
-        [in_timesteps + split2, in_timesteps + length]
+        [in_timesteps + split2, in_timesteps + length],
     ]
     normalized_data = normalize(data, split=in_timesteps + split1)
     return [
-        DataLoader(MyDataset(X=normalized_data, Y=data[0], in_hours=in_hours, out_timesteps=out_timesteps, frequency=frequency, start=start, end=end),
-                   batch_size=batch_size, shuffle=i == 0, num_workers=num_workers, pin_memory=pin_memory) for i, (start, end) in enumerate(ranges)
+        DataLoader(
+            TimeSeriesSliceDataset(
+                X=normalized_data,
+                Y=data[0],
+                in_hours=in_hours,
+                out_timesteps=out_timesteps,
+                frequency=timesteps_per_hour,
+                start=start,
+                end=end,
+            ),
+            batch_size=batch_size,
+            shuffle=i == 0,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
+        )
+        for i, (start, end) in enumerate(ranges)
     ]
 
 
-def load_adj(file: str, n_nodes: int) -> torch.Tensor:
+def load_adj(adj_file: str, num_nodes: int) -> torch.Tensor:
     r"""
     Load adjacency matrix from adjacency file.
 
@@ -87,9 +118,9 @@ def load_adj(file: str, n_nodes: int) -> torch.Tensor:
     Returns:
         torch.Tensor: Adjacency matrix.
     """
-    A = torch.eye(n_nodes)
-    for line in open(file, 'r').readlines()[1:]:
-        f, t, _ = line.split(',')
+    A = torch.eye(num_nodes)
+    for line in open(adj_file, "r").readlines()[1:]:
+        f, t, _ = line.split(",")
         f, t = int(f), int(t)
         A[f, t] = A[t, f] = 1
 
