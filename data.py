@@ -20,23 +20,28 @@ class TimeSeriesSliceDataset(Dataset):
         Y: torch.Tensor,
         in_hours: List[int],
         out_timesteps: int,
-        frequency: int,
+        timesteps_per_hour: int,
         start: int,
         end: int,
     ):
         self.X, self.Y = X, Y
         self.in_hours = in_hours
         self.out_timesteps = out_timesteps
-        self.frequency = frequency
+        self.timesteps_per_hour = timesteps_per_hour
         self.start, self.end = start, end
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         t = torch.tensor(index + self.start).long()
-        h = torch.floor(t / self.frequency).long()
+        h = torch.floor(t / self.timesteps_per_hour).long()
         d = torch.floor(h / 24).long()
         x = torch.stack(
             [
-                self.X[..., (t - hour * self.frequency) : (t - hour * self.frequency + self.frequency)]
+                self.X[
+                    ...,
+                    (t - hour * self.timesteps_per_hour) : (
+                        t - hour * self.timesteps_per_hour + self.timesteps_per_hour
+                    ),
+                ]
                 for hour in self.in_hours
             ]
         )
@@ -91,7 +96,7 @@ def load_data(
                 Y=data[0],
                 in_hours=in_hours,
                 out_timesteps=out_timesteps,
-                frequency=timesteps_per_hour,
+                timesteps_per_hour=timesteps_per_hour,
                 start=start,
                 end=end,
             ),
