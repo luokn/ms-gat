@@ -206,4 +206,4 @@ class Logger:
 def show_item(stats: dict):
     if stats is None:
         return ""
-    return f"loss:{stats['loss']:.2f} MAE={stats['MAE']:.2f} MAPE={stats['MAPE']:.2f}% RMSE={stats['RMSE']:.2f}"
+    return f"loss={stats['loss']:.2f} MAE={stats['MAE']:.2f} MAPE={stats['MAPE']:.2f}% RMSE={stats['RMSE']:.2f}"
