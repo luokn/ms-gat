@@ -65,22 +65,21 @@ def train(
         num_workers=num_workers,
     )
     # model
-    net = models[model](
+    model = models[model](
         n_components=len(in_hours),
         in_channels=num_channels,
         in_timesteps=timesteps_per_hour,
         out_timesteps=out_timesteps,
         adjacency=load_adj(adj_file, num_nodes),
         use_te=te,
-        init_params=ckpt_file is None,
     )
     # enable GPU.
     if len(gpus) > 1:
-        net = DataParallel(net, device_ids=gpus)
-    net = net.cuda(gpus[0])
+        model = DataParallel(model, device_ids=gpus)
+    model = model.cuda(gpus[0])
     # train
     trainer = Trainer(
-        model=net,
+        model=model,
         out_dir=out_dir,
         delta=delta,
         max_epochs=max_epochs,
@@ -88,13 +87,17 @@ def train(
         patience=20,
         min_delta=1e-4,
     )
-    if ckpt_file is not None:
+    if ckpt_file:
         trainer.load(ckpt_file=ckpt_file)
     trainer.fit((data_loaders[0], data_loaders[1]), gpu=gpus[0])
     print("Training completed!")
     # eval
-    evaluator = Evaluator(model=net, out_dir=out_dir, ckpt_file=trainer.out_dir / trainer.best["ckpt"], delta=delta)
-    evaluator.eval(data_loaders[-1], gpu=gpus[0])
+    Evaluator(
+        model=model,
+        out_dir=out_dir,
+        ckpt_file=trainer.out_dir / trainer.best["ckpt"],
+        delta=delta,
+    ).eval(data_loaders[-1], gpu=gpus[0])
 
 
 if __name__ == "__main__":

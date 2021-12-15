@@ -61,27 +61,25 @@ def eval(
         num_workers=num_workers,
     )
     # network
-    net = models[model](
+    model = models[model](
         n_components=len(in_hours),
         in_channels=num_channels,
         in_timesteps=timesteps_per_hour,
         out_timesteps=out_timesteps,
         adjacency=load_adj(adj_file, num_nodes),
         use_te=te,
-        init_params=False,
     )
     # enable GPU.
     if len(gpus) > 1:
-        net = DataParallel(net, device_ids=gpus)
-    net = net.cuda(gpus[0])
+        model = DataParallel(model, device_ids=gpus)
+    model = model.cuda(gpus[0])
     # eval
-    evaluator = Evaluator(
-        model=net,
+    Evaluator(
+        model=model,
         out_dir=out_dir,
         ckpt_file=ckpt_file,
         delta=delta,
-    )
-    evaluator.eval(data_loaders[-1], gpu=gpus[0])
+    ).eval(data_loaders[-1], gpu=gpus[0])
 
 
 if __name__ == "__main__":
