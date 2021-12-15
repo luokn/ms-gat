@@ -28,7 +28,6 @@ models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.
 @click.option("-i", "--in-hours", type=str, help="Sampling hours.", default="1,2,3,24,168")
 @click.option("-b", "--batch-size", type=int, help="Batch size.", default=64)
 @click.option("-e", "--epochs", type=int, help="Number of epochs.", default=100)
-@click.option("--lr", type=float, help="Learn rate.", default=1e-3)
 @click.option("--model", type=click.Choice(models.keys()), help="Model.", default="ms-gat")
 @click.option("--gpus", type=str, help="GPUs.", default="0")
 @click.option("--delta", type=float, help="Huber loss delta.", default=60)
@@ -47,7 +46,6 @@ def train(
     in_hours,
     batch_size,
     epochs,
-    lr,
     weight_decay,
     model,
     gpus,
@@ -85,7 +83,6 @@ def train(
         model=net,
         out_dir=out_dir,
         delta=delta,
-        lr=lr,
         weight_decay=weight_decay,
     )
     if ckpt_file is not None:

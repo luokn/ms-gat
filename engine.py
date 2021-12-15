@@ -29,15 +29,14 @@ class Trainer:
         out_dir: str,
         *,
         delta: float,
-        lr: float,
         weight_decay: float,
-        patience: int = 10,
+        patience: int = 15,
         min_epochs: int = 10,
         min_delta: float = 5e-4,
     ):
         self.model = model
         self.criterion = HuberLoss(delta)
-        self.optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+        self.optimizer = Adam(model.parameters(), lr=1e-3, weight_decay=weight_decay)
         self.scheduler = StepLR(self.optimizer, step_size=20, gamma=0.5)
         self.out_dir = Path(out_dir)
         if not self.out_dir.exists():
