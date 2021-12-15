@@ -7,28 +7,18 @@
 
 **Usage**
 
-1.  _Create directories:_
-
-    ```bash
-    mkdir -p checkpoints/pems{d3,d4,d7,d8,-bay}
-    ```
-
-2.  _Train on a single GPU:_
+-   _Train on a single GPU:_
 
     ```bash
     # PEMSD4
-    python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv \
-        --checkpoints checkpoints/pemsd4 --nodes 307 --channels 3 --batch 64 \
-        --workers 4 --gpu 0
+    python3 ./main.py -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/exp0 -n 307 -c 3 -b 64 -j 4
     ```
 
-3.  _Train on multiple GPUs:_
+-   _Train on multiple GPUs:_
 
     ```bash
     # PEMSD4
-    python3 ./main.py --data data/pemsd4/pemsd4.npz --adj data/pemsd4/pemsd4.csv \
-        --checkpoints checkpoints/pemsd4 --nodes 307 --channels 3 --batch 64 \
-        --workers 4 --gpus 0,1,2,3
+    python3 ./main.py -a data/pemsd4/pemsd4.csv -d data/pemsd4/pemsd4.npz -o checkpoints/pemsd4/exp1 -n 307 -c 3 -b 64 -j 4 --gpus 0,1,2,3
     ```
 
 **_Checkpoints_**
