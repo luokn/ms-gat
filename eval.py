@@ -75,7 +75,12 @@ def eval(
         net = DataParallel(net, device_ids=gpus)
     net = net.cuda(gpus[0])
     # eval
-    evaluator = Evaluator(model=net, ckpt_file=ckpt_file, out_dir=out_dir, delta=delta)
+    evaluator = Evaluator(
+        model=net,
+        out_dir=out_dir,
+        ckpt_file=ckpt_file,
+        delta=delta,
+    )
     evaluator.eval(data_loaders[-1], gpu=gpus[0])
 
 
