@@ -30,8 +30,9 @@ class Trainer:
         *,
         delta: float,
         weight_decay: float,
-        patience: int = 15,
+        max_epochs: int = 100,
         min_epochs: int = 10,
+        patience: int = 15,
         min_delta: float = 5e-4,
     ):
         self.model = model
@@ -41,15 +42,16 @@ class Trainer:
         self.out_dir = Path(out_dir)
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
-        self.patience, self.min_epochs, self.min_delta = patience, min_epochs, min_delta
+        self.max_epochs, self.min_epochs = max_epochs, min_epochs
+        self.patience, self.min_delta = patience, min_delta
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
         self.epoch = 1
         self.logger = Logger(self.out_dir / ".log")
         self.grad_scaler = GradScaler()
 
-    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], epochs: int = 100, gpu: Optional[int] = None):
-        while self.epoch <= epochs:
-            click.echo(f"Epoch {self.epoch}/{epochs}")
+    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu: Optional[int] = None):
+        while self.epoch <= self.max_epochs:
+            click.echo(f"Epoch {self.epoch}")
             # train and validate.
             self.train_epoch(data_loaders[0], gpu)
             stats = self.validate_epoch(data_loaders[1], gpu)
@@ -133,7 +135,7 @@ class Trainer:
 
 
 class Evaluator:
-    def __init__(self, model: Module, ckpt_file: str, out_dir: str, delta: float):
+    def __init__(self, model: Module, out_dir: str, ckpt_file: str, delta: float):
         states = torch.load(ckpt_file)
         model.load_state_dict(states["model"])
         self.model = model
