@@ -48,7 +48,7 @@ class Trainer:
         self.patience, self.min_delta = patience, min_delta
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
         self.epoch = 1
-        self.logger = Logger(self.out_dir / ".log")
+        self.logger = Logger(self.out_dir / "run.log")
         self.grad_scaler = GradScaler()
 
     def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu: int):
@@ -132,16 +132,20 @@ class Trainer:
                 # update progress bar.
                 bar.update(1, stats)
                 # log to file.
-                self.logger.log(label, epoch=self.epoch, batch_idx=batch_idx, batch_size=len(target), **stats)
+        self.logger.log(label, epoch=self.epoch, **stats)
         return stats
 
 
 class Evaluator:
-    def __init__(self, model: Module, ckpt_file: str, delta: float):
+    def __init__(self, model: Module, out_dir: str, ckpt_file: str, delta: float):
         states = torch.load(ckpt_file)
         model.load_state_dict(states["model"])
         self.model = model
         self.criterion = HuberLoss(delta)
+        self.out_dir = Path(out_dir)
+        if not self.out_dir.exists():
+            self.out_dir.mkdir(parents=True)
+        self.logger = Logger(self.out_dir / "run.log")
 
     @torch.no_grad()
     def eval(self, data_loader: DataLoader, gpu: int):
@@ -158,8 +162,11 @@ class Evaluator:
                 L_ave = L_acc / (batch_idx + 1)
                 # update metrics.
                 metrics.update(output, target)
+                # statistics.
+                stats = dict(loss=L_ave, **metrics.stats())
                 # update progress bar.
-                bar.update(1, dict(loss=L_ave, **metrics.stats()))
+                bar.update(1, stats)
+        self.logger.log("[Evaluate]", **stats)
 
 
 class Metrics:
