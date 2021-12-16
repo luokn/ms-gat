@@ -56,9 +56,10 @@ class TimeSeriesSliceDataset(Dataset):
 def load_data(
     data_file: str,
     batch_size: int,
-    in_hours: List[int],
-    out_timesteps: int,
-    timesteps_per_hour: int,
+    *,
+    in_hours: List[int] = [1, 2, 3, 24, 7 * 24],
+    out_timesteps: int = 12,
+    timesteps_per_hour: int = 12,
     num_workers=0,
     pin_memory=True,
 ) -> Tuple[DataLoader]:
