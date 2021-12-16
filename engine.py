@@ -22,18 +22,29 @@ from torch.utils.data import DataLoader
 from models.loss import HuberLoss
 
 LR = 1e-3
-STEP_SIZE = 20
-GAMMA = 0.5
+STEP_SIZE = 30
+GAMMA = 0.1
 
 
 class Trainer:
     def __init__(
-        self, model: Module, out_dir: str, delta: float, max_epochs: int, min_epochs: int, patience: int, min_delta: int
+        self,
+        model: Module,
+        out_dir: str,
+        delta: float,
+        lr: float,
+        weight_decay: float,
+        gamma: float,
+        step_size: int,
+        patience: int,
+        max_epochs: int,
+        min_epochs: int,
+        min_delta: int,
     ):
         self.model = model
         self.criterion = HuberLoss(delta)
-        self.optimizer = Adam(model.parameters(), lr=LR)
-        self.scheduler = StepLR(self.optimizer, step_size=STEP_SIZE, gamma=GAMMA)
+        self.optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+        self.scheduler = StepLR(self.optimizer, step_size=step_size, gamma=gamma)
         self.out_dir = Path(out_dir)
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
@@ -57,7 +68,7 @@ class Trainer:
                     self.best = dict(
                         epoch=self.epoch,
                         loss=stats["loss"],
-                        ckpt=f"{self.epoch}_loss={stats['loss']:.2f}.pkl",
+                        ckpt=f"{self.epoch}_{stats['loss']:.2f}.pkl",
                     )
                     # save the best checkpoint.
                     self.save(ckpt_file=self.out_dir / self.best["ckpt"])
@@ -130,14 +141,11 @@ class Trainer:
 
 
 class Evaluator:
-    def __init__(self, model: Module, out_dir: str, ckpt_file: str, delta: float):
+    def __init__(self, model: Module, ckpt_file: str, delta: float):
         states = torch.load(ckpt_file)
         model.load_state_dict(states["model"])
         self.model = model
         self.criterion = HuberLoss(delta)
-        self.out_dir = Path(out_dir)
-        if not self.out_dir.exists():
-            self.out_dir.mkdir(parents=True)
 
     @torch.no_grad()
     def eval(self, data_loader: DataLoader, gpu: int):
