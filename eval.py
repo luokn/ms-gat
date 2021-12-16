@@ -21,7 +21,7 @@ models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.
 @click.command()
 @click.argument("dataset", type=str)
 @click.option("-c", "--ckpt", type=str, help="checkpoint file.")
-# @click.option("-o", "--out-dir", type=str, help="output directory.")
+@click.option("-o", "--out-dir", type=str, help="output directory.")
 @click.option("-i", "--in-hours", type=str, help="input hours.", default="1,2,3,24,168")
 @click.option("-j", "--num-workers", type=int, help="data loader workers.", default=0)
 @click.option("-b", "--batch-size", type=int, help="batch size.", default=64)
@@ -36,6 +36,7 @@ def eval(
     dataset,
     *,
     ckpt,
+    out_dir,
     in_hours,
     num_workers,
     batch_size,
@@ -73,6 +74,7 @@ def eval(
     # eval
     Evaluator(
         model=model,
+        out_dir=out_dir,
         ckpt_file=ckpt,
         delta=delta,
     ).eval(data_loaders[-1], gpu=gpus[0])
