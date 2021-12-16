@@ -21,10 +21,6 @@ from torch.utils.data import DataLoader
 
 from models.loss import HuberLoss
 
-LR = 1e-3
-STEP_SIZE = 30
-GAMMA = 0.1
-
 
 class Trainer:
     def __init__(
