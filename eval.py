@@ -21,8 +21,7 @@ models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.
 @click.option("-a", "--adj-file", type=str, help="Graph adjacency file.")
 @click.option("-d", "--data-file", type=str, help="Time series data file.")
 @click.option("-f", "--ckpt-file", type=str, help="Pre-saved checkpoint file.")
-@click.option("-o", "--out-dir", type=str, help="Output directory for logs and records.")
-@click.option("-n", "--num-nodes", type=int, help="The number of nodes in the graph.")
+@click.option("-n", "--num-nodes", type=int, help="Number of nodes in the graph.")
 @click.option("-c", "--num-channels", type=int, help="Number of time series data channels.")
 @click.option("-j", "--num-workers", type=int, help="Number of data loader workers.", default=0)
 @click.option("-i", "--in-hours", type=str, help="Sampling hours.", default="1,2,3,24,168")
@@ -37,7 +36,6 @@ def eval(
     adj_file,
     data_file,
     ckpt_file,
-    out_dir,
     num_nodes,
     num_channels,
     num_workers,
@@ -76,7 +74,6 @@ def eval(
     # eval
     Evaluator(
         model=model,
-        out_dir=out_dir,
         ckpt_file=ckpt_file,
         delta=delta,
     ).eval(data_loaders[-1], gpu=gpus[0])

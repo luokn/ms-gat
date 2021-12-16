@@ -21,8 +21,8 @@ models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.
 @click.option("-a", "--adj-file", type=str, help="Graph adjacency file.")
 @click.option("-d", "--data-file", type=str, help="Time series data file.")
 @click.option("-f", "--ckpt-file", type=str, help="Pre-saved checkpoint file.")
-@click.option("-o", "--out-dir", type=str, help="Output directory for logs and records.")
-@click.option("-n", "--num-nodes", type=int, help="The number of nodes in the graph.")
+@click.option("-o", "--out-dir", type=str, help="Output directory for logs and checkpoints.")
+@click.option("-n", "--num-nodes", type=int, help="Number of nodes in the graph.")
 @click.option("-c", "--num-channels", type=int, help="Number of time series data channels.")
 @click.option("-j", "--num-workers", type=int, help="Number of data loader workers.", default=0)
 @click.option("-i", "--in-hours", type=str, help="Sampling hours.", default="1,2,3,24,168")
@@ -31,7 +31,7 @@ models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.
 @click.option("--max-epochs", type=int, help="Max epochs.", default=100)
 @click.option("--model", type=click.Choice(models.keys()), help="Model.", default="ms-gat")
 @click.option("--gpus", type=str, help="GPUs.", default="0")
-@click.option("--delta", type=float, help="Huber loss delta.", default=60)
+@click.option("--delta", type=float, help="Huber loss delta.", default=50)
 @click.option("--te/--no-te", help="With/without time embedding.", default=True)
 @click.option("--out-timesteps", type=int, help="Number of output timesteps.", default=12)
 @click.option("--timesteps-per-hour", type=int, help="Timesteps per hour.", default=12)
@@ -82,9 +82,13 @@ def train(
         model=model,
         out_dir=out_dir,
         delta=delta,
+        lr=1e-3,
+        weight_decay=1e-4,
+        gamma=0.1,
+        step_size=30,
+        patience=20,
         max_epochs=max_epochs,
         min_epochs=min_epochs,
-        patience=20,
         min_delta=1e-4,
     )
     if ckpt_file:
@@ -94,7 +98,6 @@ def train(
     # eval
     Evaluator(
         model=model,
-        out_dir=out_dir,
         ckpt_file=trainer.out_dir / trainer.best["ckpt"],
         delta=delta,
     ).eval(data_loaders[-1], gpu=gpus[0])
