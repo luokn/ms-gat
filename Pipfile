@@ -11,12 +11,12 @@ name            = "pytorch"
 [packages]
 click           = "==8.0.3"
 numpy           = "==1.21.4"
+pyyaml          = "==6.0"
 torch           = {version = "==1.10.0+cu113", index = "pytorch"}
-pyyaml = "*"
 
 [dev-packages]
 black           = "*"
-ipykernel = "*"
+ipykernel       = "*"
 
 [requires]
 python_version  = "3.9"
