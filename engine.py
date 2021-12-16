@@ -102,7 +102,7 @@ class Trainer(Engine):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
             with torch.enable_grad():
-                stats = self._run_epoch(data_loaders[0], mode="train", gpu=gpu, epoch=self.epoch)
+                self._run_epoch(data_loaders[0], mode="train", gpu=gpu, epoch=self.epoch)
             with torch.no_grad():
                 stats = self._run_epoch(data_loaders[1], mode="validate", gpu=gpu, epoch=self.epoch)
             self.scheduler.step()
