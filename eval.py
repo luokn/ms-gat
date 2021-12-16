@@ -18,17 +18,20 @@ from models import msgat
 models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.msgat72, "ms-gat96": msgat.msgat96}
 
 
-@click.command(help="Evaluate.")
+@click.command()
 @click.argument("dataset", type=str)
-@click.option("-c", "--ckpt", type=str, help="Checkpoint file.")
-@click.option("-i", "--in-hours", type=str, help="Input hours.", default="1,2,3,24,168")
-@click.option("-j", "--num-workers", type=int, help="Number of DataLoader workers.", default=0)
-@click.option("-b", "--batch-size", type=int, help="Batch size.", default=64)
-@click.option("--model", type=str, help="Model name.", default="ms-gat")
-@click.option("--delta", type=float, help="HuberLoss delta.", default=50)
+@click.option("-c", "--ckpt", type=str, help="checkpoint file.")
+@click.option("-i", "--in-hours", type=str, help="input hours.", default="1,2,3,24,168")
+# @click.option("-o", "--out-dir", type=str, help="output directory.")
+@click.option("-j", "--num-workers", type=int, help="data loader workers.", default=0)
+@click.option("-b", "--batch-size", type=int, help="batch size.", default=64)
+@click.option("--model", type=str, help="model name.", default="ms-gat")
+@click.option("--delta", type=float, help="huber loss delta.", default=50)
 @click.option("--gpus", type=str, help="GPUs.", default="0")
-@click.option("--out-timesteps", type=int, help="Number of output timesteps.", default=12)
-@click.option("--te/--no-te", help="With/without TE.", default=True)
+# @click.option("--min-epochs", type=int, help="min epochs.", default=10)
+# @click.option("--max-epochs", type=int, help="max epochs.", default=100)
+@click.option("--out-timesteps", type=int, help="number of output timesteps.", default=12)
+@click.option("--te/--no-te", help="with/without TE.", default=True)
 def eval(
     dataset,
     *,
