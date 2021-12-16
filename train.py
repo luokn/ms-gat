@@ -21,8 +21,8 @@ models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.
 @click.command()
 @click.argument("dataset", type=str)
 @click.option("-c", "--ckpt", type=str, help="checkpoint file.")
-@click.option("-i", "--in-hours", type=str, help="input hours.", default="1,2,3,24,168")
 @click.option("-o", "--out-dir", type=str, help="output directory.")
+@click.option("-i", "--in-hours", type=str, help="input hours.", default="1,2,3,24,168")
 @click.option("-j", "--num-workers", type=int, help="data loader workers.", default=0)
 @click.option("-b", "--batch-size", type=int, help="batch size.", default=64)
 @click.option("--model", type=str, help="model name.", default="ms-gat")
@@ -50,7 +50,7 @@ def train(
 ):
     in_hours, gpus = [int(i) for i in in_hours.split(",")], [int(i) for i in gpus.split(",")]
     with open("data.yaml", "r") as f:
-        dataset = yaml.load(f, Loader=yaml.CLoader)
+        dataset = yaml.load(f, Loader=yaml.CLoader)[dataset]
     # data loaders
     data_loaders = load_data(
         data_file=dataset["data-file"],
@@ -63,7 +63,7 @@ def train(
     # model
     model = models[model](
         n_components=len(in_hours),
-        in_channels=dataset["num_channels"],
+        in_channels=dataset["num-channels"],
         in_timesteps=dataset["timesteps-per-hour"],
         out_timesteps=out_timesteps,
         adjacency=load_adj(dataset["adj-file"], dataset["num-nodes"]),
