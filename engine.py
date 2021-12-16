@@ -9,7 +9,7 @@
 
 from pathlib import Path
 from time import localtime, strftime
-from typing import Optional, Tuple
+from typing import Tuple
 
 import click
 import torch
@@ -22,55 +22,100 @@ from torch.utils.data import DataLoader
 from models.loss import HuberLoss
 
 
-class Trainer:
-    def __init__(
-        self,
-        model: Module,
-        out_dir: str,
-        delta: float,
-        lr: float,
-        weight_decay: float,
-        gamma: float,
-        step_size: int,
-        patience: int,
-        max_epochs: int,
-        min_epochs: int,
-        min_delta: int,
-    ):
+class Engine:
+    def __init__(self, model: Module, out_dir: str, **kwargs: dict) -> None:
         self.model = model
-        self.criterion = HuberLoss(delta)
-        self.optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-        self.scheduler = StepLR(self.optimizer, step_size=step_size, gamma=gamma)
+        self.criterion = HuberLoss(kwargs["delta"])
         self.out_dir = Path(out_dir)
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
-        self.max_epochs, self.min_epochs = max_epochs, min_epochs
-        self.patience, self.min_delta = patience, min_delta
-        self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
-        self.epoch = 1
-        self.logger = Logger(self.out_dir / "run.log")
+        self.log_file = self.out_dir / "run.log"
+
+    def _run_epoch(self, data_loader: DataLoader, mode: str, gpu: int, epoch=None) -> dict:
+        labels = {"train": "[Train   ]", "validate": "[Validate]", "evaluate": ["Evaluate"]}
+        L_acc, L_ave, metrics = 0.0, 0.0, Metrics()
+        self.model.train(mode == "train")
+        with click.progressbar(
+            length=len(data_loader), label=labels[mode], item_show_func=self.__show_item, width=25
+        ) as bar:
+            for batch_idx, batch in enumerate(data_loader):
+                batch = [t.cuda(gpu) for t in batch]
+                inputs, target = batch[:-1], batch[-1]
+                if mode == "train":
+                    with autocast():
+                        output = self.model(*inputs)
+                        loss = self.criterion(output, target)
+                    self.optimizer.zero_grad()
+                    self.grad_scaler.scale(loss).backward()
+                    self.grad_scaler.step(self.optimizer)
+                    self.grad_scaler.update()
+                else:
+                    output = self.model(*inputs)
+                    loss = self.criterion(output, target)
+                # update loss.
+                L_acc += loss.item()
+                L_ave = L_acc / (batch_idx + 1)
+                # update metrics.
+                metrics.update(output, target)
+                # statistics.
+                stats = dict(loss=L_ave, **metrics.stats())
+                # update progress bar.
+                bar.update(n_steps=1, current_item=stats)
+                # log to file.
+        if mode == "train" or mode == "validate":
+            self._log(labels[mode], epoch=epoch, **stats)
+        else:
+            self._log(labels[mode], **stats)
+        return stats
+
+    def _log(self, *args: list, **kwargs: dict):
+        with open(self.log_file, "a") as f:
+            f.write(strftime("%Y/%m/%d %H:%M:%S", localtime()))
+            f.write(" - ")
+            f.write(" - ".join([f"{arg}" for arg in args]))
+            f.write(" - ")
+            f.write(",".join([f"{k}={v}" for k, v in kwargs.items()]))
+            f.write("\n")
+
+    @staticmethod
+    def __show_item(stats: dict):
+        if stats is None:
+            return ""
+        return f"loss={stats['loss']:.2f} MAE={stats['MAE']:.2f} MAPE={stats['MAPE']:.2f}% RMSE={stats['RMSE']:.2f}"
+
+
+class Trainer(Engine):
+    def __init__(
+        self, model: Module, out_dir: str, max_epochs: int, min_epochs: int, patience: int, min_delta: int, **kwargs
+    ):
+        super(Trainer, self).__init__(model, out_dir, delta=kwargs["delta"])
+        self.optimizer = Adam(model.parameters(), lr=kwargs["lr"], weight_decay=kwargs["weight_decay"])
+        self.scheduler = StepLR(self.optimizer, step_size=kwargs["step_size"], gamma=kwargs["gamma"])
         self.grad_scaler = GradScaler()
+        #
+        self.patience, self.min_delta = patience, min_delta
+        self.max_epochs, self.min_epochs = max_epochs, min_epochs
+        self.epoch = 1
+        self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
 
     def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu: int):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
-            # train and validate.
-            self.train_epoch(data_loaders[0], gpu)
-            stats = self.validate_epoch(data_loaders[1], gpu)
+            with torch.enable_grad():
+                stats = self._run_epoch(data_loaders[0], mode="train", gpu=gpu, epoch=self.epoch)
+            with torch.no_grad():
+                stats = self._run_epoch(data_loaders[1], mode="validate", gpu=gpu, epoch=self.epoch)
             self.scheduler.step()
             if self.epoch > self.min_epochs:
-                # optimality check
                 if stats["loss"] < (1 - self.min_delta) * self.best["loss"]:
                     self.best = dict(
                         epoch=self.epoch,
                         loss=stats["loss"],
                         ckpt=f"{self.epoch}_{stats['loss']:.2f}.pkl",
                     )
-                    # save the best checkpoint.
                     self.save(ckpt_file=self.out_dir / self.best["ckpt"])
-                # early stop.
                 elif self.epoch > self.best["epoch"] + self.patience:
-                    break
+                    break  # early stop.
             self.epoch += 1
 
     def save(self, ckpt_file):
@@ -95,78 +140,16 @@ class Trainer:
         self.scheduler.load_state_dict(states["scheduler"])
         self.grad_scaler.load_state_dict(states["grad_scaler"])
 
-    @torch.enable_grad()
-    def train_epoch(self, data_loader: DataLoader, gpu: int) -> dict:
-        self.model.train()
-        return self.__run_epoch(data_loader, gpu, label="[Train   ]", train=True)
 
-    @torch.no_grad()
-    def validate_epoch(self, data_loader: DataLoader, gpu: int) -> dict:
-        self.model.eval()
-        return self.__run_epoch(data_loader, gpu, label="[Validate]", train=False)
-
-    def __run_epoch(self, data_loader: DataLoader, gpu: Optional[int], label: str, train: bool) -> dict:
-        L_acc, L_ave, metrics = 0.0, 0.0, Metrics()
-        with click.progressbar(length=len(data_loader), label=label, item_show_func=show_item, width=25) as bar:
-            for batch_idx, batch in enumerate(data_loader):
-                batch = [t.cuda(gpu) for t in batch]
-                inputs, target = batch[:-1], batch[-1]
-                if train:
-                    with autocast():
-                        output = self.model(*inputs)
-                        loss = self.criterion(output, target)
-                    self.optimizer.zero_grad()
-                    self.grad_scaler.scale(loss).backward()
-                    self.grad_scaler.step(self.optimizer)
-                    self.grad_scaler.update()
-                else:
-                    output = self.model(*inputs)
-                    loss = self.criterion(output, target)
-                # update loss.
-                L_acc += loss.item()
-                L_ave = L_acc / (batch_idx + 1)
-                # update metrics.
-                metrics.update(output, target)
-                # statistics.
-                stats = dict(loss=L_ave, **metrics.stats())
-                # update progress bar.
-                bar.update(1, stats)
-                # log to file.
-        self.logger.log(label, epoch=self.epoch, **stats)
-        return stats
-
-
-class Evaluator:
-    def __init__(self, model: Module, out_dir: str, ckpt_file: str, delta: float):
+class Evaluator(Engine):
+    def __init__(self, model: Module, out_dir: str, ckpt_file: str, **kwargs):
+        super(Evaluator, self).__init__(model, out_dir, delta=kwargs["delta"])
         states = torch.load(ckpt_file)
         model.load_state_dict(states["model"])
-        self.model = model
-        self.criterion = HuberLoss(delta)
-        self.out_dir = Path(out_dir)
-        if not self.out_dir.exists():
-            self.out_dir.mkdir(parents=True)
-        self.logger = Logger(self.out_dir / "run.log")
 
-    @torch.no_grad()
     def eval(self, data_loader: DataLoader, gpu: int):
-        self.model.eval()
-        L_acc, L_ave, metrics = 0.0, 0.0, Metrics()
-        with click.progressbar(length=len(data_loader), label="[Evaluate]", item_show_func=show_item, width=25) as bar:
-            for batch_idx, batch in enumerate(data_loader):
-                batch = [t.cuda(gpu) for t in batch]
-                inputs, target = batch[:-1], batch[-1]
-                output = self.model(*inputs)
-                loss = self.criterion(output, target)
-                # update loss.
-                L_acc += loss.item()
-                L_ave = L_acc / (batch_idx + 1)
-                # update metrics.
-                metrics.update(output, target)
-                # statistics.
-                stats = dict(loss=L_ave, **metrics.stats())
-                # update progress bar.
-                bar.update(1, stats)
-        self.logger.log("[Evaluate]", **stats)
+        with torch.no_grad():
+            self._run_epoch(data_loader, mode="evaluate", gpu=gpu)
 
 
 class Metrics:
@@ -194,22 +177,3 @@ class Metrics:
         # RMSE
         self.SE += torch.square(output - target).sum().item()
         self.RMSE = (self.SE / self.n) ** 0.5
-
-
-class Logger:
-    def __init__(self, log_file: Path):
-        self.log_file = log_file
-
-    def log(self, *args: list, **kwargs: dict):
-        with open(self.log_file, "a") as f:
-            f.write(strftime("%Y/%m/%d %H:%M:%S", localtime()))
-            f.write("".join([f" - {i}" for i in args]))
-            f.write(" - ")
-            f.write(",".join([f"{k}={v}" for k, v in kwargs.items()]))
-            f.write("\n")
-
-
-def show_item(stats: dict):
-    if stats is None:
-        return ""
-    return f"loss={stats['loss']:.2f} MAE={stats['MAE']:.2f} MAPE={stats['MAPE']:.2f}% RMSE={stats['RMSE']:.2f}"

@@ -51,16 +51,16 @@ def train(
     in_hours, gpus = [int(i) for i in in_hours.split(",")], [int(i) for i in gpus.split(",")]
     with open("data.yaml", "r") as f:
         dataset = yaml.load(f, Loader=yaml.CLoader)[dataset]
-    # data loaders
+    # load data.
     data_loaders = load_data(
-        data_file=dataset["data-file"],
-        batch_size=batch_size,
+        dataset["data-file"],
+        batch_size,
         in_hours=in_hours,
         out_timesteps=out_timesteps,
         timesteps_per_hour=dataset["timesteps-per-hour"],
         num_workers=num_workers,
     )
-    # model
+    # create model.
     model = models[model](
         n_components=len(in_hours),
         in_channels=dataset["num-channels"],
@@ -69,32 +69,33 @@ def train(
         adjacency=load_adj(dataset["adj-file"], dataset["num-nodes"]),
         use_te=te,
     )
-    # enable GPU.
+    # enable cuda.
     if len(gpus) > 1:
         model = DataParallel(model, device_ids=gpus)
     model = model.cuda(gpus[0])
-    # train
+    # train.
     trainer = Trainer(
-        model=model,
-        out_dir=out_dir,
+        model,
+        out_dir,
+        max_epochs,
+        min_epochs,
+        patience=20,
+        min_delta=1e-4,
         delta=delta,
         lr=1e-3,
         weight_decay=1e-4,
-        gamma=0.1,
         step_size=30,
-        patience=20,
-        max_epochs=max_epochs,
-        min_epochs=min_epochs,
-        min_delta=1e-4,
+        gamma=0.1,
     )
     if ckpt:
         trainer.load(ckpt_file=ckpt)
     trainer.fit((data_loaders[0], data_loaders[1]), gpu=gpus[0])
     print("Training completed!")
-    # eval
+    # evaluate.
     Evaluator(
-        model=model,
-        ckpt_file=trainer.out_dir / trainer.best["ckpt"],
+        model,
+        out_dir,
+        trainer.out_dir / trainer.best["ckpt"],
         delta=delta,
     ).eval(data_loaders[-1], gpu=gpus[0])
 

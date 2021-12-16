@@ -49,16 +49,16 @@ def eval(
     in_hours, gpus = [int(i) for i in in_hours.split(",")], [int(i) for i in gpus.split(",")]
     with open("data.yaml", "r") as f:
         dataset = yaml.load(f, Loader=yaml.CLoader)[dataset]
-    # data loaders
+    # load data.
     data_loaders = load_data(
-        data_file=dataset["data-file"],
-        batch_size=batch_size,
+        dataset["data-file"],
+        batch_size,
         in_hours=in_hours,
         out_timesteps=out_timesteps,
         timesteps_per_hour=dataset["timesteps-per-hour"],
         num_workers=num_workers,
     )
-    # model
+    # create model.
     model = models[model](
         n_components=len(in_hours),
         in_channels=dataset["num-channels"],
@@ -67,15 +67,15 @@ def eval(
         adjacency=load_adj(dataset["adj-file"], dataset["num-nodes"]),
         use_te=te,
     )
-    # enable GPU.
+    # enable cuda.
     if len(gpus) > 1:
         model = DataParallel(model, device_ids=gpus)
     model = model.cuda(gpus[0])
     # eval
     Evaluator(
-        model=model,
-        out_dir=out_dir,
-        ckpt_file=ckpt,
+        model,
+        out_dir,
+        ckpt,
         delta=delta,
     ).eval(data_loaders[-1], gpu=gpus[0])
 
