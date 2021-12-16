@@ -12,6 +12,7 @@ name            = "pytorch"
 click           = "==8.0.3"
 numpy           = "==1.21.4"
 torch           = {version = "==1.10.0+cu113", index = "pytorch"}
+pyyaml = "*"
 
 [dev-packages]
 black           = "*"
