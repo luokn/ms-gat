@@ -8,7 +8,6 @@
 
 
 import click
-from click.utils import open_file
 import yaml
 from torch.nn import DataParallel
 
@@ -18,11 +17,18 @@ from models import msgat
 
 models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.msgat72, "ms-gat96": msgat.msgat96}
 
-to_list = lambda ctx, param, value: [int(i) for i in value.split(",")]
+
+def open_data(ctx, param, value):
+    with open("data.yaml", "r") as f:
+        return yaml.load(f, Loader=yaml.CLoader)[value]
+
+
+def to_list(ctx, param, value):
+    return [int(i) for i in value.split(",")]
 
 
 @click.command()
-@click.option("-d", "--data", type=str, help="dataset name.", required=True)
+@click.option("-d", "--data", type=str, callback=open_data, help="dataset name.", required=True)
 @click.option("-c", "--ckpt", type=str, help="checkpoint file.", default=None)
 @click.option("-o", "--out-dir", type=str, help="output directory.", required=True)
 @click.option("-i", "--in-hours", type=str, callback=to_list, help="input hours.", default="1,2,3,24,168")
@@ -37,8 +43,6 @@ to_list = lambda ctx, param, value: [int(i) for i in value.split(",")]
 @click.option("--te/--no-te", type=bool, help="with/without TE.", default=True)
 @click.option("--eval", type=bool, is_flag=True, help="evaluation mode.", default=False)
 def main(data, ckpt, out_dir, **kwargs):
-    with open("data.yaml", "r") as f:
-        data = yaml.load(f, Loader=yaml.CLoader)[data]
     # load data.
     data_loaders = load_data(
         data_file=data["data-file"],
@@ -80,8 +84,8 @@ def main(data, ckpt, out_dir, **kwargs):
         )
         if ckpt:
             trainer.load(ckpt)
-        trainer.fit((data_loaders[0], data_loaders[1]), gpu_id=kwargs["gpu_ids"][0])
-        print("Training completed!")
+        trainer.fit(data_loaders[0:2], gpu_id=kwargs["gpu_ids"][0])
+        click.echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
         trainer.eval(data_loaders[-1], gpu_id=kwargs["gpu_ids"][0])
 
