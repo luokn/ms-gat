@@ -60,30 +60,29 @@ def main(data, ckpt, out_dir, **kwargs):
     # enable cuda.
     if len(gpus) > 1:
         model = DataParallel(model, device_ids=gpus)
-    model = model.cuda(gpus[0])
-    if not kwargs["eval"]:
-        # train.
+    model.cuda(gpus[0])
+    if kwargs["eval"]:  # evaluate.
+        evaluator = Evaluator(model, out_dir, ckpt, delta=kwargs["delta"])
+        evaluator.eval(data_loaders[-1], gpu=gpus[0])
+    else:  # train.
         trainer = Trainer(
             model,
             out_dir,
             max_epochs=kwargs["max_epochs"],
             min_epochs=kwargs["min_epochs"],
-            delta=kwargs["delta"],
             patience=20,
             min_delta=1e-4,
             lr=1e-3,
             weight_decay=1e-4,
             step_size=30,
             gamma=0.1,
+            delta=kwargs["delta"],
         )
         if ckpt:
             trainer.load(ckpt_file=ckpt)
         trainer.fit((data_loaders[0], data_loaders[1]), gpu=gpus[0])
         print("Training completed!")
-        ckpt = trainer.out_dir / trainer.best["ckpt"]
-    # evaluate.
-    evaluator = Evaluator(model, out_dir, ckpt, delta=kwargs["delta"])
-    evaluator.eval(data_loaders[-1], gpu=gpus[0])
+        trainer.eval(data_loaders[-1], gpu=gpus[0])
 
 
 if __name__ == "__main__":
