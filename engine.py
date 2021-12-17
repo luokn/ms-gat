@@ -9,7 +9,6 @@
 
 from pathlib import Path
 from time import localtime, strftime
-from typing import Tuple
 
 import click
 import torch
@@ -23,7 +22,7 @@ from models.loss import HuberLoss
 
 
 class Engine:
-    def __init__(self, model: Module, out_dir: str, **kwargs: dict) -> None:
+    def __init__(self, model: Module, out_dir, **kwargs) -> None:
         self.model = model
         self.criterion = HuberLoss(kwargs["delta"])
         self.out_dir = Path(out_dir)
@@ -31,7 +30,7 @@ class Engine:
             self.out_dir.mkdir(parents=True)
         self.log_file = self.out_dir / "run.log"
 
-    def _run_epoch(self, data_loader: DataLoader, mode: str, gpu: int, epoch=None) -> dict:
+    def _run_epoch(self, data_loader: DataLoader, mode, epoch, gpu_id):
         self.model.train(mode == "train")
         with torch.set_grad_enabled(mode == "train"):
             labels = {"train": "[Train   ]", "validate": "[Validate]", "evaluate": "[Evaluate]"}
@@ -40,7 +39,7 @@ class Engine:
                 length=len(data_loader), label=labels[mode], item_show_func=self.__show_item, width=25
             ) as bar:
                 for batch_idx, batch in enumerate(data_loader):
-                    batch = [t.cuda(gpu) for t in batch]
+                    batch = [t.cuda(gpu_id) for t in batch]
                     inputs, target = batch[:-1], batch[-1]
                     if mode == "train":
                         with autocast():
@@ -60,16 +59,14 @@ class Engine:
                     metrics.update(output, target)
                     # update progress bar.
                     bar.update(n_steps=1, current_item=(L_ave, metrics))
-            # statistics.
-            stats = dict(loss=L_ave, **metrics.stats())
             # log to file.
-            if mode == "train" or mode == "validate":
-                self._log(labels[mode], epoch=epoch, **stats)
+            if mode == "evaluate":
+                self._log(labels[mode], loss=L_ave, **metrics.stats())
             else:
-                self._log(labels[mode], **stats)
-            return stats
+                self._log(labels[mode], epoch=epoch, loss=L_ave, **metrics.stats())
+            return L_ave
 
-    def _log(self, *args: list, **kwargs: dict):
+    def _log(self, *args, **kwargs):
         with open(self.log_file, "a") as f:
             f.write(strftime("%Y/%m/%d %H:%M:%S", localtime()))
             f.write(" - ")
@@ -79,50 +76,44 @@ class Engine:
             f.write("\n")
 
     @staticmethod
-    def __show_item(pair):
-        if pair is None:
+    def __show_item(current_item):
+        if current_item is None:
             return ""
-        loss, metrics = pair
+        loss, metrics = current_item
         return f"loss={loss:.2f} MAE={metrics.MAE:.2f} MAPE={metrics.MAPE:.2f}% RMSE={metrics.RMSE:.2f}"
 
 
 class Trainer(Engine):
-    def __init__(
-        self, model: Module, out_dir: str, max_epochs: int, min_epochs: int, patience: int, min_delta: int, **kwargs
-    ):
+    def __init__(self, model: Module, out_dir, **kwargs):
         super(Trainer, self).__init__(model, out_dir, delta=kwargs["delta"])
         self.optimizer = Adam(model.parameters(), lr=kwargs["lr"], weight_decay=kwargs["weight_decay"])
         self.scheduler = StepLR(self.optimizer, step_size=kwargs["step_size"], gamma=kwargs["gamma"])
         self.grad_scaler = GradScaler()
         #
-        self.patience, self.min_delta = patience, min_delta
-        self.max_epochs, self.min_epochs = max_epochs, min_epochs
+        self.patience, self.min_delta = kwargs["patience"], kwargs["min_delta"]
+        self.max_epochs, self.min_epochs = kwargs["max_epochs"], kwargs["min_epochs"]
         self.epoch = 1
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
 
-    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu: int):
+    def fit(self, data_loaders: tuple, gpu_id):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
-            self._run_epoch(data_loaders[0], mode="train", gpu=gpu, epoch=self.epoch)
-            stats = self._run_epoch(data_loaders[1], mode="validate", gpu=gpu, epoch=self.epoch)
+            self._run_epoch(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
+            loss = self._run_epoch(data_loaders[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
             self.scheduler.step()
             if self.epoch > self.min_epochs:
-                if stats["loss"] < (1 - self.min_delta) * self.best["loss"]:
-                    self.best = dict(
-                        epoch=self.epoch,
-                        loss=stats["loss"],
-                        ckpt=f"{self.epoch}_{stats['loss']:.2f}.pkl",
-                    )
-                    self.save(ckpt_file=self.out_dir / self.best["ckpt"])
+                if loss < (1 - self.min_delta) * self.best["loss"]:
+                    self.best = dict(epoch=self.epoch, loss=loss, ckpt=self.out_dir / f"{self.epoch}_{loss:.2f}.pkl")
+                    self.save(ckpt=self.best["ckpt"])
                 elif self.epoch > self.best["epoch"] + self.patience:
                     break  # early stop.
             self.epoch += 1
 
-    def eval(self, data_loader: DataLoader, gpu: int):
-        self._run_epoch(data_loader, mode="evaluate", gpu=gpu)
+    def eval(self, data_loader: DataLoader, gpu_id):
+        self._run_epoch(data_loader, mode="evaluate", gpu_id=gpu_id)
 
-    def save(self, ckpt_file):
-        click.echo(f"• Save checkpoint {ckpt_file}")
+    def save(self, ckpt):
+        click.echo(f"• Save checkpoint {ckpt}")
         states = dict(
             best=self.best,
             epoch=self.epoch,
@@ -131,11 +122,11 @@ class Trainer(Engine):
             scheduler=self.scheduler.state_dict(),
             grad_scaler=self.grad_scaler.state_dict(),
         )
-        torch.save(states, ckpt_file)
+        torch.save(states, ckpt)
 
-    def load(self, ckpt_file):
-        click.echo(f"• Load checkpoint {ckpt_file}")
-        states = torch.load(ckpt_file)
+    def load(self, ckpt):
+        click.echo(f"• Load checkpoint {ckpt}")
+        states = torch.load(ckpt)
         self.best = states["best"]
         self.epoch = states["epoch"] + 1
         self.model.load_state_dict(states["model"])
@@ -145,13 +136,13 @@ class Trainer(Engine):
 
 
 class Evaluator(Engine):
-    def __init__(self, model: Module, out_dir: str, ckpt_file: str, **kwargs):
+    def __init__(self, model: Module, out_dir: str, **kwargs):
         super(Evaluator, self).__init__(model, out_dir, delta=kwargs["delta"])
-        states = torch.load(ckpt_file)
+        states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
     def eval(self, data_loader: DataLoader, gpu: int):
-        self._run_epoch(data_loader, mode="evaluate", gpu=gpu)
+        self._run_epoch(data_loader, mode="evaluate", gpu_id=gpu)
 
 
 class Metrics:
