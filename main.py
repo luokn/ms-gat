@@ -7,7 +7,6 @@
 # @Time    : 17:05:00
 
 
-from pathlib import Path
 import click
 import yaml
 from torch.nn import DataParallel
@@ -47,6 +46,7 @@ def main(data, ckpt, out_dir, **kwargs):
         out_timesteps=kwargs["out_timesteps"],
         timesteps_per_hour=data["timesteps-per-hour"],
         num_workers=kwargs["num_workers"],
+        pin_memory=True,
     )
     # create model.
     model = models[kwargs["model"]](
@@ -54,8 +54,8 @@ def main(data, ckpt, out_dir, **kwargs):
         in_channels=data["num-channels"],
         in_timesteps=data["timesteps-per-hour"],
         out_timesteps=kwargs["out_timesteps"],
-        adjacency=load_adj(data["adj-file"], data["num-nodes"]),
         use_te=kwargs["te"],
+        adj=load_adj(data["adj-file"], data["num-nodes"]),
     )
     # enable cuda.
     if len(gpus) > 1:
@@ -82,6 +82,7 @@ def main(data, ckpt, out_dir, **kwargs):
             trainer.load(ckpt_file=ckpt)
         trainer.fit((data_loaders[0], data_loaders[1]), gpu=gpus[0])
         print("Training completed!")
+        trainer.load(ckpt_file=trainer.out_dir / trainer.best["ckpt"])
         trainer.eval(data_loaders[-1], gpu=gpus[0])
 
 
