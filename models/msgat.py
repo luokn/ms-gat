@@ -172,8 +172,8 @@ class MSGAT(nn.Module):
         components (list): Configurations for the components.
         in_timesteps (int): Number of input timesteps.
         out_timesteps (int): Number of outpuy timesteps.
-        adjacency (torch.Tensor): Adjacency matrix.
         use_te (bool, optional): Use TE. Defaults to True.
+        adj (torch.Tensor): Adjacency matrix.
 
     Shape:
         X: ``[batch_size, n_channels, n_nodes, in_timesteps]``
@@ -182,20 +182,18 @@ class MSGAT(nn.Module):
         output: ``[batch_size, n_nodes, out_timesteps]``
     """
 
-    def __init__(
-        self, components: List[dict], in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
-    ):
+    def __init__(self, components: List[dict], in_timesteps: int, out_timesteps: int, use_te: bool, adj: torch.Tensor):
         super(MSGAT, self).__init__()
         if use_te:
-            self.te = TE(len(components), len(adjacency), out_timesteps)
+            self.te = TE(len(components), len(adj), out_timesteps)
         else:
-            self.W = nn.Parameter(torch.Tensor(len(components), len(adjacency), out_timesteps), requires_grad=True)
-        self.adj = nn.Parameter(adjacency, requires_grad=False)
+            self.W = nn.Parameter(torch.Tensor(len(components), len(adj), out_timesteps), requires_grad=True)
+        self.adj = nn.Parameter(adj, requires_grad=False)
         self.tpcs = nn.ModuleList(
             [
                 TPC(
                     channels=component["channels"],
-                    n_nodes=len(adjacency),
+                    n_nodes=len(adj),
                     in_timesteps=in_timesteps,
                     out_timesteps=out_timesteps,
                     dilations=component["dilations"],
@@ -214,39 +212,22 @@ class MSGAT(nn.Module):
         Use ``xavier_normal_`` or ``uniform_`` to initialize the parameters of the network
         """
         for param in self.parameters():
-            if param.requires_grad:
-                if param.ndim >= 2:
-                    init.xavier_normal_(param)
-                else:
-                    f_out = param.size(0)
-                    init.uniform_(param, -(f_out ** -0.5), f_out ** -0.5)
+            if not param.requires_grad:
+                continue
+            if param.ndim >= 2:
+                init.xavier_normal_(param)
+            else:
+                f_out = param.size(0)
+                init.uniform_(param, -(f_out ** -0.5), f_out ** -0.5)
 
 
-def msgat96(
-    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
-):
-    components = [{"channels": [in_channels, 48, 48], "dilations": [[1, 2], [2, 4]]}] * n_components
-    msgat = MSGAT(
-        components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te
-    )
-    return msgat
+def msgat96(n_components: int, in_channels, **kwargs):
+    return MSGAT([{"channels": [in_channels, 48, 48], "dilations": [[1, 2], [2, 4]]}] * n_components, **kwargs)
 
 
-def msgat72(
-    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
-):
-    components = [{"channels": [in_channels, 72, 72], "dilations": [[1, 2], [2, 4]]}] * n_components
-    msgat = MSGAT(
-        components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te
-    )
-    return msgat
+def msgat72(n_components: int, in_channels: int, **kwargs):
+    return MSGAT([{"channels": [in_channels, 72, 72], "dilations": [[1, 2], [2, 4]]}] * n_components, **kwargs)
 
 
-def msgat48(
-    n_components: int, in_channels: int, in_timesteps: int, out_timesteps: int, adjacency: torch.Tensor, use_te=True
-):
-    components = [{"channels": [in_channels, 96, 96], "dilations": [[1, 1, 2, 2], [4, 4]]}] * n_components
-    msgat = MSGAT(
-        components, in_timesteps=in_timesteps, out_timesteps=out_timesteps, adjacency=adjacency, use_te=use_te
-    )
-    return msgat
+def msgat48(n_components: int, in_channels: int, **kwargs):
+    return MSGAT([{"channels": [in_channels, 96, 96], "dilations": [[1, 1, 2, 2], [4, 4]]}] * n_components, **kwargs)

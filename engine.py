@@ -80,7 +80,10 @@ class Engine:
 
     @staticmethod
     def __show_item(pair):
-        return f"loss={pair[0]:.2f} {pair[1]}" if pair is not None else ""
+        if pair is None:
+            return ""
+        loss, metrics = pair
+        return f"loss={loss:.2f} MAE={metrics.MAE:.2f} MAPE={metrics.MAPE:.2f}% RMSE={metrics.RMSE:.2f}"
 
 
 class Trainer(Engine):
@@ -116,7 +119,6 @@ class Trainer(Engine):
             self.epoch += 1
 
     def eval(self, data_loader: DataLoader, gpu: int):
-        self.load(ckpt_file=self.out_dir / self.best["ckpt"])
         self._run_epoch(data_loader, mode="evaluate", gpu=gpu)
 
     def save(self, ckpt_file):
@@ -149,8 +151,7 @@ class Evaluator(Engine):
         model.load_state_dict(states["model"])
 
     def eval(self, data_loader: DataLoader, gpu: int):
-        with torch.no_grad():
-            self._run_epoch(data_loader, mode="evaluate", gpu=gpu)
+        self._run_epoch(data_loader, mode="evaluate", gpu=gpu)
 
 
 class Metrics:
@@ -178,6 +179,3 @@ class Metrics:
         # RMSE
         self.SE += torch.square(output - target).sum().item()
         self.RMSE = (self.SE / self.n) ** 0.5
-
-    def __expr__(self) -> str:
-        return f"MAE={self.MAE:.2f} MAPE={self.MAPE:.2f}% RMSE={self.RMSE:.2f}"
