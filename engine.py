@@ -116,6 +116,7 @@ class Trainer(Engine):
             self.epoch += 1
 
     def eval(self, data_loader: DataLoader, gpu: int):
+        self.load(ckpt_file=self.out_dir / self.best["ckpt"])
         self._run_epoch(data_loader, mode="evaluate", gpu=gpu)
 
     def save(self, ckpt_file):
