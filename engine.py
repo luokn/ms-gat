@@ -22,15 +22,15 @@ from models.loss import HuberLoss
 
 
 class Engine:
-    def __init__(self, model: Module, out_dir, **kwargs) -> None:
+    def __init__(self, model, out_dir, **kwargs):
         self.model = model
-        self.criterion = HuberLoss(kwargs["delta"])
+        self.loss_fn = HuberLoss(kwargs["delta"])
         self.out_dir = Path(out_dir)
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
         self.log_file = self.out_dir / "run.log"
 
-    def _run_epoch(self, data_loader: DataLoader, mode, epoch, gpu_id):
+    def _run_once(self, data_loader, mode, epoch, gpu_id):
         self.model.train(mode == "train")
         with torch.set_grad_enabled(mode == "train"):
             labels = {"train": "[Train   ]", "validate": "[Validate]", "evaluate": "[Evaluate]"}
@@ -38,32 +38,30 @@ class Engine:
             with click.progressbar(
                 length=len(data_loader), label=labels[mode], item_show_func=self.__show_item, width=25
             ) as bar:
-                for batch_idx, batch in enumerate(data_loader):
-                    batch = [t.cuda(gpu_id) for t in batch]
-                    inputs, target = batch[:-1], batch[-1]
+                for batch_idx, batch_data in enumerate(data_loader):
+                    batch_data = [tensor.cuda(gpu_id) for tensor in batch_data]
+                    inputs, truth = batch_data[:-1], batch_data[-1]
+                    with autocast():
+                        output = self.model(*inputs)
+                        loss = self.loss_fn(output, truth)
                     if mode == "train":
-                        with autocast():
-                            output = self.model(*inputs)
-                            loss = self.criterion(output, target)
                         self.optimizer.zero_grad()
                         self.grad_scaler.scale(loss).backward()
                         self.grad_scaler.step(self.optimizer)
                         self.grad_scaler.update()
-                    else:
-                        output = self.model(*inputs)
-                        loss = self.criterion(output, target)
-                    # update loss.
+                    # else:
+                    #     output = self.model(*inputs)
+                    #     loss = self.criterion(output, target)
                     L_acc += loss.item()
-                    L_ave = L_acc / (batch_idx + 1)
-                    # update metrics.
-                    metrics.update(output, target)
-                    # update progress bar.
+                    L_ave = L_acc / (batch_idx + 1)  # loss.
+                    metrics.update(output, truth)  # metrics.
                     bar.update(n_steps=1, current_item=(L_ave, metrics))
+            stats = dict(loss=L_ave, MAE=metrics.MAE, MAPE=metrics.MAPE, RMSE=metrics.RMSE)
             # log to file.
             if mode == "evaluate":
-                self._log(labels[mode], loss=L_ave, **metrics.stats())
+                self._log(labels[mode], **stats)
             else:
-                self._log(labels[mode], epoch=epoch, loss=L_ave, **metrics.stats())
+                self._log(labels[mode], epoch=epoch, **stats)
             return L_ave
 
     def _log(self, *args, **kwargs):
@@ -84,7 +82,7 @@ class Engine:
 
 
 class Trainer(Engine):
-    def __init__(self, model: Module, out_dir, **kwargs):
+    def __init__(self, model, out_dir, **kwargs):
         super(Trainer, self).__init__(model, out_dir, delta=kwargs["delta"])
         self.optimizer = Adam(model.parameters(), lr=kwargs["lr"], weight_decay=kwargs["weight_decay"])
         self.scheduler = StepLR(self.optimizer, step_size=kwargs["step_size"], gamma=kwargs["gamma"])
@@ -95,11 +93,11 @@ class Trainer(Engine):
         self.epoch = 1
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
 
-    def fit(self, data_loaders: tuple, gpu_id):
+    def fit(self, data_loaders, gpu_id):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
-            self._run_epoch(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
-            loss = self._run_epoch(data_loaders[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
+            self._run_once(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
+            loss = self._run_once(data_loaders[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
             self.scheduler.step()
             if self.epoch > self.min_epochs:
                 if loss < (1 - self.min_delta) * self.best["loss"]:
@@ -109,8 +107,8 @@ class Trainer(Engine):
                     break  # early stop.
             self.epoch += 1
 
-    def eval(self, data_loader: DataLoader, gpu_id):
-        self._run_epoch(data_loader, mode="evaluate", gpu_id=gpu_id)
+    def eval(self, data_loader, gpu_id):
+        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
     def save(self, ckpt):
         click.echo(f"• Save checkpoint {ckpt}")
@@ -136,13 +134,13 @@ class Trainer(Engine):
 
 
 class Evaluator(Engine):
-    def __init__(self, model: Module, out_dir: str, **kwargs):
+    def __init__(self, model, out_dir, **kwargs):
         super(Evaluator, self).__init__(model, out_dir, delta=kwargs["delta"])
         states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
-    def eval(self, data_loader: DataLoader, gpu: int):
-        self._run_epoch(data_loader, mode="evaluate", gpu_id=gpu)
+    def eval(self, data_loader, gpu_id):
+        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
 
 class Metrics:
@@ -150,12 +148,9 @@ class Metrics:
     Calculate ``MAE/MAPE/RMSE``.
     """
 
-    def __init__(self, mask_value: float = 0.0):
+    def __init__(self, mask_value=0.0):
         self.n, self.mask_value = 0, mask_value
         self.AE, self.APE, self.SE, self.MAE, self.MAPE, self.RMSE = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-
-    def stats(self) -> dict:
-        return {"MAE": self.MAE, "MAPE": self.MAPE, "RMSE": self.RMSE}
 
     def update(self, output: torch.Tensor, target: torch.Tensor):
         self.n += target.nelement()
