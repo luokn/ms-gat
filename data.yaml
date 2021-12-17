@@ -20,8 +20,8 @@ pemsd7:
     timesteps-per-hour: 12
 
 pemsd8:
-    adj-file: data/pemsd7/pemsd7.csv
-    data-file: data/pemsd7/pemsd7.npz
+    adj-file: data/pemsd8/pemsd8.csv
+    data-file: data/pemsd8/pemsd8.npz
     num-channels: 3
     num-nodes: 170
     timesteps-per-hour: 12
