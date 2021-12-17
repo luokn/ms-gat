@@ -79,8 +79,8 @@ class Engine:
             f.write("\n")
 
     @staticmethod
-    def __show_item(item):
-        return f"loss={item[0]:.2f} {item[1]}" if item is not None else ""
+    def __show_item(pair):
+        return f"loss={pair[0]:.2f} {pair[1]}" if pair is not None else ""
 
 
 class Trainer(Engine):
@@ -179,4 +179,4 @@ class Metrics:
         self.RMSE = (self.SE / self.n) ** 0.5
 
     def __expr__(self) -> str:
-        return "MAE=%.2f MAPE=%.2f%% RMSE=%.2f" % (self.MAE, self.MAPE, self.RMSE)
+        return f"MAE={self.MAE:.2f} MAPE={self.MAPE:.2f}% RMSE={self.RMSE:.2f}"
