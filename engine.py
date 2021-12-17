@@ -13,10 +13,8 @@ from time import localtime, strftime
 import click
 import torch
 from torch.cuda.amp import GradScaler, autocast
-from torch.nn import Module
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
-from torch.utils.data import DataLoader
 
 from models.loss import HuberLoss
 
@@ -93,7 +91,7 @@ class Trainer(Engine):
         self.epoch = 1
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
 
-    def fit(self, data_loaders, gpu_id):
+    def fit(self, data_loaders, gpu_id=None):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
             self._run_once(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
@@ -107,7 +105,7 @@ class Trainer(Engine):
                     break  # early stop.
             self.epoch += 1
 
-    def eval(self, data_loader, gpu_id):
+    def eval(self, data_loader, gpu_id=None):
         self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
     def save(self, ckpt):
@@ -139,7 +137,7 @@ class Evaluator(Engine):
         states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
-    def eval(self, data_loader, gpu_id):
+    def eval(self, data_loader, gpu_id=None):
         self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
 

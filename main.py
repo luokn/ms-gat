@@ -7,9 +7,11 @@
 # @Time    : 17:05:00
 
 
+import os
+
 import click
 import yaml
-from torch.nn import DataParallel
+from torch import cuda, nn
 
 from data import load_adj, load_data
 from engine import Evaluator, Trainer
@@ -36,13 +38,14 @@ def to_list(ctx, param, value):
 @click.option("-b", "--batch-size", type=int, help="batch size.", default=64)
 @click.option("--model", type=str, help="model name.", default="ms-gat")
 @click.option("--delta", type=float, help="huber loss delta.", default=50)
-@click.option("--gpu-ids", type=str, callback=to_list, help="GPU device id.", default="0")
+@click.option("--gpu-ids", type=str, help="GPUs.", default="0")
 @click.option("--min-epochs", type=int, help="min epochs.", default=10)
 @click.option("--max-epochs", type=int, help="max epochs.", default=100)
 @click.option("--out-timesteps", type=int, help="number of output timesteps.", default=12)
 @click.option("--te/--no-te", type=bool, help="with/without TE.", default=True)
 @click.option("--eval", type=bool, is_flag=True, help="evaluation mode.", default=False)
 def main(data, ckpt, out_dir, **kwargs):
+    os.environ["CUDA_VISIBLE_DEVICES"] = kwargs["gpu_ids"]
     # load data.
     data_loaders = load_data(
         data_file=data["data-file"],
@@ -62,12 +65,12 @@ def main(data, ckpt, out_dir, **kwargs):
         adj=load_adj(data["adj-file"], data["num-nodes"]),
     )
     # enable cuda.
-    if len(kwargs["gpu_ids"]) > 1:
-        model = DataParallel(model, device_ids=kwargs["gpu_ids"])
-    model.cuda(kwargs["gpu_ids"][0])
+    if cuda.device_count() > 1:
+        model = nn.DataParallel(model)
+    model.cuda()
     if kwargs["eval"]:  # evaluate.
         evaluator = Evaluator(model, out_dir, ckpt=ckpt, delta=kwargs["delta"])
-        evaluator.eval(data_loaders[-1], gpu_id=kwargs["gpu_ids"][0])
+        evaluator.eval(data_loaders[-1])
     else:  # train.
         trainer = Trainer(
             model,
@@ -84,10 +87,10 @@ def main(data, ckpt, out_dir, **kwargs):
         )
         if ckpt:
             trainer.load(ckpt)
-        trainer.fit(data_loaders[0:2], gpu_id=kwargs["gpu_ids"][0])
+        trainer.fit(data_loaders[0:2])
         click.echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
-        trainer.eval(data_loaders[-1], gpu_id=kwargs["gpu_ids"][0])
+        trainer.eval(data_loaders[-1])
 
 
 if __name__ == "__main__":
