@@ -50,9 +50,6 @@ class Engine:
                         self.grad_scaler.scale(loss).backward()
                         self.grad_scaler.step(self.optimizer)
                         self.grad_scaler.update()
-                    # else:
-                    #     output = self.model(*inputs)
-                    #     loss = self.criterion(output, target)
                     L_acc += loss.item()
                     L_ave = L_acc / (batch_idx + 1)  # loss.
                     metrics.update(output, truth)  # metrics.
