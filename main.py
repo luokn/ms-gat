@@ -46,7 +46,7 @@ def to_list(ctx, param, value):
 @click.option("--eval", type=bool, is_flag=True, help="evaluation mode.", default=False)
 def main(data, ckpt, out_dir, **kwargs):
     # load data.
-    data = load_data(
+    data_loaders = load_data(
         data_file=data["data-file"],
         timesteps_per_hour=data["timesteps-per-hour"],
         in_hours=kwargs["in_hours"],
@@ -70,7 +70,7 @@ def main(data, ckpt, out_dir, **kwargs):
     model.cuda()
     if kwargs["eval"]:  # evaluate.
         evaluator = Evaluator(model, out_dir, ckpt=ckpt, delta=kwargs["delta"])
-        evaluator.eval(data[-1])
+        evaluator.eval(data_loaders[-1])
     else:  # train.
         trainer = Trainer(
             model,
@@ -87,10 +87,10 @@ def main(data, ckpt, out_dir, **kwargs):
         )
         if ckpt:
             trainer.load(ckpt)
-        trainer.fit(data[0:2])
+        trainer.fit(data_loaders[0:2])
         click.echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
-        trainer.eval(data[-1])
+        trainer.eval(data_loaders[-1])
 
 
 if __name__ == "__main__":

@@ -31,15 +31,15 @@ class Engine:
             self.out_dir.mkdir(parents=True)
         self.log_file = self.out_dir / "run.log"
 
-    def _run_once(self, data: DataLoader, mode, epoch, gpu_id):
+    def _run_once(self, data_loader: DataLoader, mode, epoch, gpu_id):
         self.model.train(mode == "train")
         with torch.set_grad_enabled(mode == "train"):
             labels = {"train": "[Train   ]", "validate": "[Validate]", "evaluate": "[Evaluate]"}
             L_acc, L_ave, metrics = 0.0, 0.0, Metrics()
             with click.progressbar(
-                length=len(data), label=labels[mode], item_show_func=self.__show_item, width=25
+                length=len(data_loader), label=labels[mode], item_show_func=self.__show_item, width=25
             ) as bar:
-                for batch_idx, batch_data in enumerate(data):
+                for batch_idx, batch_data in enumerate(data_loader):
                     batch_data = [tensor.cuda(gpu_id) for tensor in batch_data]
                     inputs, truth = batch_data[:-1], batch_data[-1]
                     with autocast():
@@ -94,11 +94,11 @@ class Trainer(Engine):
         self.epoch = 1
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
 
-    def fit(self, data: Tuple[DataLoader, DataLoader], gpu_id=None):
+    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu_id=None):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
-            self._run_once(data[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
-            loss = self._run_once(data[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
+            self._run_once(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
+            loss = self._run_once(data_loaders[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
             self.scheduler.step()
             if self.epoch > self.min_epochs:
                 if loss < (1 - self.min_delta) * self.best["loss"]:
@@ -108,8 +108,8 @@ class Trainer(Engine):
                     break  # early stop.
             self.epoch += 1
 
-    def eval(self, data: DataLoader, gpu_id=None):
-        self._run_once(data, mode="evaluate", epoch=None, gpu_id=gpu_id)
+    def eval(self, data_loader: DataLoader, gpu_id=None):
+        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
     def save(self, ckpt):
         click.echo(f"• Save checkpoint {ckpt}")
@@ -140,8 +140,8 @@ class Evaluator(Engine):
         states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
-    def eval(self, data: DataLoader, gpu_id=None):
-        self._run_once(data, mode="evaluate", epoch=None, gpu_id=gpu_id)
+    def eval(self, data_loader: DataLoader, gpu_id=None):
+        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
 
 class Metrics:
