@@ -9,34 +9,37 @@
 
 from pathlib import Path
 from time import localtime, strftime
+from typing import Tuple
 
 import click
 import torch
 from torch.cuda.amp import GradScaler, autocast
+from torch.nn import Module
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader
 
 from models.loss import HuberLoss
 
 
 class Engine:
-    def __init__(self, model, out_dir, **kwargs):
+    def __init__(self, model: Module, **kwargs):
         self.model = model
         self.loss_fn = HuberLoss(kwargs["delta"])
-        self.out_dir = Path(out_dir)
+        self.out_dir = Path(kwargs["out_dir"])
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
         self.log_file = self.out_dir / "run.log"
 
-    def _run_once(self, data_loader, mode, epoch, gpu_id):
+    def _run_once(self, data: DataLoader, mode, epoch, gpu_id):
         self.model.train(mode == "train")
         with torch.set_grad_enabled(mode == "train"):
             labels = {"train": "[Train   ]", "validate": "[Validate]", "evaluate": "[Evaluate]"}
             L_acc, L_ave, metrics = 0.0, 0.0, Metrics()
             with click.progressbar(
-                length=len(data_loader), label=labels[mode], item_show_func=self.__show_item, width=25
+                length=len(data), label=labels[mode], item_show_func=self.__show_item, width=25
             ) as bar:
-                for batch_idx, batch_data in enumerate(data_loader):
+                for batch_idx, batch_data in enumerate(data):
                     batch_data = [tensor.cuda(gpu_id) for tensor in batch_data]
                     inputs, truth = batch_data[:-1], batch_data[-1]
                     with autocast():
@@ -80,8 +83,8 @@ class Engine:
 
 
 class Trainer(Engine):
-    def __init__(self, model, out_dir, **kwargs):
-        super(Trainer, self).__init__(model, out_dir, delta=kwargs["delta"])
+    def __init__(self, model: Module, **kwargs):
+        super(Trainer, self).__init__(model, **kwargs)
         self.optimizer = Adam(model.parameters(), lr=kwargs["lr"], weight_decay=kwargs["weight_decay"])
         self.scheduler = StepLR(self.optimizer, step_size=kwargs["step_size"], gamma=kwargs["gamma"])
         self.grad_scaler = GradScaler()
@@ -91,11 +94,11 @@ class Trainer(Engine):
         self.epoch = 1
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
 
-    def fit(self, data_loaders, gpu_id=None):
+    def fit(self, data: Tuple[DataLoader, DataLoader], gpu_id=None):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
-            self._run_once(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
-            loss = self._run_once(data_loaders[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
+            self._run_once(data[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
+            loss = self._run_once(data[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
             self.scheduler.step()
             if self.epoch > self.min_epochs:
                 if loss < (1 - self.min_delta) * self.best["loss"]:
@@ -105,8 +108,8 @@ class Trainer(Engine):
                     break  # early stop.
             self.epoch += 1
 
-    def eval(self, data_loader, gpu_id=None):
-        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
+    def eval(self, data: DataLoader, gpu_id=None):
+        self._run_once(data, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
     def save(self, ckpt):
         click.echo(f"• Save checkpoint {ckpt}")
@@ -132,13 +135,13 @@ class Trainer(Engine):
 
 
 class Evaluator(Engine):
-    def __init__(self, model, out_dir, **kwargs):
-        super(Evaluator, self).__init__(model, out_dir, delta=kwargs["delta"])
+    def __init__(self, model: Module, **kwargs):
+        super(Evaluator, self).__init__(model, **kwargs)
         states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
-    def eval(self, data_loader, gpu_id=None):
-        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
+    def eval(self, data: DataLoader, gpu_id=None):
+        self._run_once(data, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
 
 class Metrics:
@@ -150,16 +153,16 @@ class Metrics:
         self.n, self.mask_value = 0, mask_value
         self.AE, self.APE, self.SE, self.MAE, self.MAPE, self.RMSE = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
-    def update(self, output: torch.Tensor, target: torch.Tensor):
-        self.n += target.nelement()
+    def update(self, prediction, truth):
+        self.n += truth.nelement()
         # MAE
-        self.AE += torch.abs(output - target).sum().item()
+        self.AE += torch.abs(prediction - truth).sum().item()
         self.MAE = self.AE / self.n
         # MAPE
-        mask = target > self.mask_value
-        masked_output, masked_target = output[mask], target[mask]
-        self.APE += 100 * torch.abs((masked_output - masked_target) / masked_target).sum().item()
+        mask = truth > self.mask_value
+        masked_prediction, masked_truth = prediction[mask], truth[mask]
+        self.APE += 100 * torch.abs((masked_prediction - masked_truth) / masked_truth).sum().item()
         self.MAPE = self.APE / self.n
         # RMSE
-        self.SE += torch.square(output - target).sum().item()
+        self.SE += torch.square(prediction - truth).sum().item()
         self.RMSE = (self.SE / self.n) ** 0.5

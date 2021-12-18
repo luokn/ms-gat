@@ -13,54 +13,25 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 
-class TimeSeriesSliceDataset(Dataset):
-    def __init__(
-        self,
-        X: torch.Tensor,
-        Y: torch.Tensor,
-        in_hours: List[int],
-        out_timesteps: int,
-        timesteps_per_hour: int,
-        start: int,
-        end: int,
-    ):
+class TimeSeriesSlice(Dataset):
+    def __init__(self, X: torch.Tensor, Y: torch.Tensor, interval, hours, q, tau):
         self.X, self.Y = X, Y
-        self.in_hours = in_hours
-        self.out_timesteps = out_timesteps
-        self.timesteps_per_hour = timesteps_per_hour
-        self.start, self.end = start, end
+        self.interval, self.hours, self.q, self.tau = interval, hours, q, tau
 
-    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        t = torch.tensor(index + self.start).long()
-        h = torch.floor(t / self.timesteps_per_hour).long()
-        d = torch.floor(h / 24).long()
-        x = torch.stack(
-            [
-                self.X[
-                    ...,
-                    (t - hour * self.timesteps_per_hour) : (
-                        t - hour * self.timesteps_per_hour + self.timesteps_per_hour
-                    ),
-                ]
-                for hour in self.in_hours
-            ]
-        )
-        y = self.Y[..., t : (t + self.out_timesteps)]
+    def __getitem__(self, i: int):
+        t = torch.tensor(i + self.interval[0], dtype=torch.long)
+        h = torch.div(t, self.tau, rounding_mode="trunc")
+        d = torch.div(h, 24, rounding_mode="trunc")
+        x = torch.stack([self.X[..., (t - h * self.tau) : (t - h * self.tau + self.tau)] for h in self.hours])
+        y = self.Y[..., t : (t + self.q)]
         return x, h % 24, d % 7, y
 
-    def __len__(self) -> int:
-        return self.end - self.start
+    def __len__(self):
+        return self.interval[1] - self.interval[0]
 
 
 # load data
-def load_data(
-    data_file: str,
-    timesteps_per_hour: int = 12,
-    batch_size: int = 64,
-    in_hours: List[int] = [1, 2, 3, 24, 7 * 24],
-    out_timesteps: int = 12,
-    num_workers=0,
-) -> Tuple[DataLoader]:
+def load_data(data_file, **kwargs):
     """
     Create data loaders for training, validation and evaluation.
 
@@ -68,43 +39,42 @@ def load_data(
         file (str): Data file.
         batch_size (int): Batch size.
         in_hours (list): Number of input hours.
-        out_timesteps (int): Number of output timesteps.
         timesteps_per_hour (int): Timesteps per hour.
-        num_workers (int, optional): Number of workers. Defaults to 0.
-        pin_memory (bool, optional): Pin memory. Defaults to True.
+        out_timesteps (int): Number of output timesteps.
+        num_workers (int): Number of workers. Defaults to 0.
+        pin_memory (bool): Pin memory. Defaults to True.
 
     Returns:
         List[DataLoader]: Training, validation and evaluation data loader.
     """
-    in_timesteps = timesteps_per_hour * max(in_hours)
+    in_timesteps = kwargs["timesteps_per_hour"] * max(kwargs["in_hours"])
     data = (
         torch.from_numpy(np.load(data_file)["data"]).float().transpose(0, -1)
     )  # -> [n_channels, n_nodes, n_timesteps]
-    length = data.shape[-1] - in_timesteps - out_timesteps + 1
+    length = data.size(-1) - in_timesteps - kwargs["out_timesteps"] + 1
     split1, split2 = int(0.6 * length), int(0.8 * length)
-    ranges = [
-        [in_timesteps, in_timesteps + split1],
-        [in_timesteps + split1, in_timesteps + split2],
-        [in_timesteps + split2, in_timesteps + length],
+    intervals = [
+        [in_timesteps, in_timesteps + split1],  # training.
+        [in_timesteps + split1, in_timesteps + split2],  # validation.
+        [in_timesteps + split2, in_timesteps + length],  # evaluation.
     ]
     normalized_data = normalize(data, split=in_timesteps + split1)
     return [
         DataLoader(
-            TimeSeriesSliceDataset(
-                X=normalized_data,
-                Y=data[0],
-                in_hours=in_hours,
-                out_timesteps=out_timesteps,
-                timesteps_per_hour=timesteps_per_hour,
-                start=start,
-                end=end,
+            TimeSeriesSlice(
+                normalized_data,
+                data[0],
+                interval,
+                kwargs["in_hours"],
+                kwargs["out_timesteps"],
+                kwargs["timesteps_per_hour"],
             ),
-            batch_size=batch_size,
+            kwargs["batch_size"],
             shuffle=i == 0,
-            num_workers=num_workers,
             pin_memory=True,
+            num_workers=kwargs["num_workers"],
         )
-        for i, (start, end) in enumerate(ranges)
+        for i, interval in intervals
     ]
 
 
