@@ -60,7 +60,6 @@ def load_data(
     in_hours: List[int] = [1, 2, 3, 24, 7 * 24],
     out_timesteps: int = 12,
     num_workers=0,
-    pin_memory=True,
 ) -> Tuple[DataLoader]:
     """
     Create data loaders for training, validation and evaluation.
@@ -103,7 +102,7 @@ def load_data(
             batch_size=batch_size,
             shuffle=i == 0,
             num_workers=num_workers,
-            pin_memory=pin_memory,
+            pin_memory=True,
         )
         for i, (start, end) in enumerate(ranges)
     ]
