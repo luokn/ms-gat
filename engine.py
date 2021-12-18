@@ -91,7 +91,7 @@ class Trainer(Engine):
         self.epoch = 1
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
 
-    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu_id=None):
+    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu_id):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
             self._run_once(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
@@ -105,7 +105,7 @@ class Trainer(Engine):
                     break  # early stop.
             self.epoch += 1
 
-    def eval(self, data_loader: DataLoader, gpu_id=None):
+    def eval(self, data_loader: DataLoader, gpu_id):
         self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
     def save(self, ckpt):
@@ -137,7 +137,7 @@ class Evaluator(Engine):
         states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
-    def eval(self, data_loader: DataLoader, gpu_id=None):
+    def eval(self, data_loader: DataLoader, gpu_id):
         self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
 
