@@ -44,7 +44,7 @@ def to_list(ctx, param, value):
 @click.option("--out-timesteps", type=int, help="number of output timesteps.", default=12)
 @click.option("--te/--no-te", type=bool, help="with/without TE.", default=True)
 @click.option("--eval", type=bool, is_flag=True, help="evaluation mode.", default=False)
-def main(data, ckpt, out_dir, **kwargs):
+def main(data, **kwargs):
     # load data.
     data_loaders = load_data(
         data_file=data["data-file"],
@@ -69,7 +69,12 @@ def main(data, ckpt, out_dir, **kwargs):
         model = nn.DataParallel(model)
     model.cuda()
     if kwargs["eval"]:  # evaluate.
-        evaluator = Evaluator(model, out_dir, ckpt=ckpt, delta=kwargs["delta"])
+        evaluator = Evaluator(
+            model,
+            kwargs["out_dir"],
+            ckpt=kwargs["ckpt"],
+            delta=kwargs["delta"],
+        )
         evaluator.eval(data_loaders[-1])
     else:  # train.
         trainer = Trainer(
@@ -85,8 +90,8 @@ def main(data, ckpt, out_dir, **kwargs):
             gamma=0.1,
             step_size=30,
         )
-        if ckpt:
-            trainer.load(ckpt)
+        if kwargs["ckpt"] is not None:
+            trainer.load(kwargs["ckpt"])
         trainer.fit(data_loaders[0:2])
         click.echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
