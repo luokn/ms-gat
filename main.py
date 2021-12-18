@@ -45,14 +45,13 @@ def to_list(ctx, param, value):
 @click.option("--te/--no-te", type=bool, help="with/without TE.", default=True)
 @click.option("--eval", type=bool, is_flag=True, help="evaluation mode.", default=False)
 def main(data, ckpt, out_dir, **kwargs):
-    os.environ["CUDA_VISIBLE_DEVICES"] = kwargs["gpu_ids"]
     # load data.
-    data_loaders = load_data(
+    data = load_data(
         data_file=data["data-file"],
         timesteps_per_hour=data["timesteps-per-hour"],
-        batch_size=kwargs["batch_size"],
         in_hours=kwargs["in_hours"],
         out_timesteps=kwargs["out_timesteps"],
+        batch_size=kwargs["batch_size"],
         num_workers=kwargs["num_workers"],
     )
     # create model.
@@ -65,19 +64,20 @@ def main(data, ckpt, out_dir, **kwargs):
         adj=load_adj(data["adj-file"], data["num-nodes"]),
     )
     # enable cuda.
+    os.environ["CUDA_VISIBLE_DEVICES"] = kwargs["gpu_ids"]
     if cuda.device_count() > 1:
         model = nn.DataParallel(model)
     model.cuda()
     if kwargs["eval"]:  # evaluate.
         evaluator = Evaluator(model, out_dir, ckpt=ckpt, delta=kwargs["delta"])
-        evaluator.eval(data_loaders[-1])
+        evaluator.eval(data[-1])
     else:  # train.
         trainer = Trainer(
             model,
-            out_dir,
-            delta=kwargs["delta"],
+            out_dir=kwargs["out_dir"],
             max_epochs=kwargs["max_epochs"],
             min_epochs=kwargs["min_epochs"],
+            delta=kwargs["delta"],
             lr=1e-3,
             weight_decay=1e-4,
             patience=20,
@@ -87,10 +87,10 @@ def main(data, ckpt, out_dir, **kwargs):
         )
         if ckpt:
             trainer.load(ckpt)
-        trainer.fit(data_loaders[0:2])
+        trainer.fit(data[0:2])
         click.echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
-        trainer.eval(data_loaders[-1])
+        trainer.eval(data[-1])
 
 
 if __name__ == "__main__":
