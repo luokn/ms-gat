@@ -74,7 +74,7 @@ def load_data(data_file, **kwargs):
             pin_memory=True,
             num_workers=kwargs["num_workers"],
         )
-        for i, interval in intervals
+        for i, interval in enumerate(intervals)
     ]
 
 
