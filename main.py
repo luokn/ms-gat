@@ -75,7 +75,7 @@ def main(data, **kwargs):
             ckpt=kwargs["ckpt"],
             delta=kwargs["delta"],
         )
-        evaluator.eval(data_loaders[-1])
+        evaluator.eval(data_loaders[-1], gpu_id=None)
     else:  # train.
         trainer = Trainer(
             model,
@@ -92,10 +92,10 @@ def main(data, **kwargs):
         )
         if kwargs["ckpt"] is not None:
             trainer.load(kwargs["ckpt"])
-        trainer.fit(data_loaders[0:2])
+        trainer.fit(data_loaders[0:2], gpu_id=None)
         click.echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
-        trainer.eval(data_loaders[-1])
+        trainer.eval(data_loaders[-1], gpu_id=None)
 
 
 if __name__ == "__main__":
