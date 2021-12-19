@@ -6,34 +6,37 @@
 2. _Unzip and move to_ `./data/`
 
 **Usage**
- 
+
 1.  _Train_
 
     -   Single GPU:
 
         ```bash
         # PEMSD3
-        python3 main.py -d pemsd3 -o checkpoints/pemsd3/exp0 -j 16 -i 1,2,3,24 --gpu-ids 0
+        python3 main.py -d pemsd3 -o checkpoints/pemsd3/ -i 1,2,3,24
         # PEMSD4
-        python3 main.py -d pemsd4 -o checkpoints/pemsd4/exp0 -j 16 --gpu-ids 0
+        python3 main.py -d pemsd4 -o checkpoints/pemsd4/
         # PEMSD7
-        python3 main.py -d pemsd7 -o checkpoints/pemsd7/exp0 -j 16 --gpu-ids 0
+        python3 main.py -d pemsd7 -o checkpoints/pemsd7/
         # PEMSD8
-        python3 main.py -d pemsd8 -o checkpoints/pemsd8/exp0 -j 16 --gpu-ids 0
+        python3 main.py -d pemsd8 -o checkpoints/pemsd8/
+
+        # docker(PEMSD4)
+        docker run -it --rm --gpus=all -v /path/to/checkpoints:/ms-gat/checkpoints luokn/ms-gat -d pemsd4
         ```
 
     -   Multiple GPUs:
 
         ```bash
         # PEMSD7
-        python3 main.py -d pemsd7 -o checkpoints/pemsd7/exp0 -j 16 -b 128 --gpu-ids 0,1,2,3
+        python3 main.py -d pemsd7 -o checkpoints/pemsd7 -j 16 -b 128 --gpu-ids 0,1,2,3
         ```
 
 2.  _Evaluate_
 
     ```bash
     # PEMSD4
-    python3 main.py -d pemsd4 -o checkpoints/pemsd8/exp0 -c checkpoints/pemsd4/exp0/xxx.pkl -j 16 --eval
+    python3 main.py -d pemsd4 -o checkpoints/pemsd4 -c checkpoints/pemsd4/xxx.pkl --eval
     ```
 
 **_Checkpoints_**
