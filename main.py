@@ -32,7 +32,7 @@ def to_list(ctx, param, value):
 @click.command()
 @click.option("-d", "--data", type=str, callback=open_data, help="dataset name.", required=True)
 @click.option("-c", "--ckpt", type=str, help="checkpoint file.", default=None)
-@click.option("-o", "--out-dir", type=str, help="output directory.", required=True)
+@click.option("-o", "--out-dir", type=str, help="output directory.", default="checkpoints")
 @click.option("-i", "--in-hours", type=str, callback=to_list, help="input hours.", default="1,2,3,24,168")
 @click.option("-j", "--num-workers", type=int, help="data loader workers.", default=0)
 @click.option("-b", "--batch-size", type=int, help="batch size.", default=64)
@@ -42,7 +42,7 @@ def to_list(ctx, param, value):
 @click.option("--min-epochs", type=int, help="min epochs.", default=10)
 @click.option("--max-epochs", type=int, help="max epochs.", default=100)
 @click.option("--out-timesteps", type=int, help="number of output timesteps.", default=12)
-@click.option("--te/--no-te", type=bool, help="with/without TE.", default=True)
+@click.option("--no-te", type=bool, is_flag=True, help="with/without TE.", default=False)
 @click.option("--eval", type=bool, is_flag=True, help="evaluation mode.", default=False)
 def main(data, **kwargs):
     # load data.
@@ -60,7 +60,7 @@ def main(data, **kwargs):
         in_channels=data["num-channels"],
         in_timesteps=data["timesteps-per-hour"],
         out_timesteps=kwargs["out_timesteps"],
-        use_te=kwargs["te"],
+        use_te=not kwargs["no_te"],
         adj=load_adj(data["adj-file"], data["num-nodes"]),
     )
     # enable cuda.
