@@ -9,23 +9,31 @@
 
 1.  _Train_
 
-    ```sh
-    # PEMSD3
-    python3 main.py -d pemsd3 -o checkpoints/pemsd3 -i 1,2,3,24
-    # PEMSD4
-    python3 main.py -d pemsd4 -o checkpoints/pemsd4
-    # PEMSD7
-    python3 main.py -d pemsd7 -o checkpoints/pemsd7
-    # PEMSD8
-    python3 main.py -d pemsd8 -o checkpoints/pemsd8
-    ```
+    -   Docker container (recommended)
 
-    Docker:
+        ```sh
+        # PEMSD3
+        docker run -it --rm --gpus=all --shm-size=1g -v /path/to/checkpoints:/ms-gat/checkpoints luokn/ms-gat -d pemsd3 -j 8 -i 1,2,3,24
+        # PEMSD4
+        docker run -it --rm --gpus=all --shm-size=1g -v /path/to/checkpoints:/ms-gat/checkpoints luokn/ms-gat -d pemsd4 -j 8
+        # PEMSD7
+        docker run -it --rm --gpus=all --shm-size=1g -v /path/to/checkpoints:/ms-gat/checkpoints luokn/ms-gat -d pemsd7 -j 8 -b 32
+        # PEMSD8
+        docker run -it --rm --gpus=all --shm-size=1g -v /path/to/checkpoints:/ms-gat/checkpoints luokn/ms-gat -d pemsd8 -j 8
+        ```
 
-    ```sh
-    # PEMSD4
-    docker run -it --rm --gpus=all -v /path/to/checkpoints:/ms-gat/checkpoints luokn/ms-gat -d pemsd4
-    ```
+    -   Physical machine:
+
+        ```sh
+        # PEMSD3
+        python3 main.py -d pemsd3 -o checkpoints/pemsd3 -j 8 -i 1,2,3,24
+        # PEMSD4
+        python3 main.py -d pemsd4 -o checkpoints/pemsd4 -j 8
+        # PEMSD7
+        python3 main.py -d pemsd7 -o checkpoints/pemsd7 -j 8 -b 32
+        # PEMSD8
+        python3 main.py -d pemsd8 -o checkpoints/pemsd8 -j 8
+        ```
 
 2.  _Evaluate_
 
