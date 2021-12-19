@@ -30,20 +30,20 @@ def to_list(ctx, param, value):
 
 
 @click.command()
-@click.option("-d", "--data", type=str, callback=open_data, help="dataset name.", required=True)
-@click.option("-c", "--ckpt", type=str, help="checkpoint file.", default=None)
-@click.option("-o", "--out-dir", type=str, help="output directory.", default="checkpoints")
-@click.option("-i", "--in-hours", type=str, callback=to_list, help="input hours.", default="1,2,3,24,168")
-@click.option("-j", "--num-workers", type=int, help="data loader workers.", default=0)
-@click.option("-b", "--batch-size", type=int, help="batch size.", default=64)
-@click.option("--model", type=str, help="model name.", default="ms-gat")
-@click.option("--delta", type=float, help="huber loss delta.", default=50)
+@click.option("-d", "--data", type=str, callback=open_data, help="Dataset name.", required=True)
+@click.option("-c", "--ckpt", type=str, help="Checkpoint file.", default=None)
+@click.option("-o", "--out-dir", type=str, help="Output directory.", default="checkpoints")
+@click.option("-i", "--in-hours", type=str, callback=to_list, help="Input hours.", default="1,2,3,24,168")
+@click.option("-b", "--batch-size", type=int, help="Batch size.", default=64)
+@click.option("-j", "--num-workers", type=int, help="Number of 'DataLoader' workers.", default=0)
+@click.option("--model", type=str, help="Model name.", default="ms-gat")
+@click.option("--delta", type=float, help="Delta of 'HuberLoss'.", default=50)
 @click.option("--gpu-ids", type=str, help="GPUs.", default="0")
-@click.option("--min-epochs", type=int, help="min epochs.", default=10)
-@click.option("--max-epochs", type=int, help="max epochs.", default=100)
-@click.option("--out-timesteps", type=int, help="number of output timesteps.", default=12)
-@click.option("--no-te", type=bool, is_flag=True, help="with/without TE.", default=False)
-@click.option("--eval", type=bool, is_flag=True, help="evaluation mode.", default=False)
+@click.option("--min-epochs", type=int, help="Min epochs.", default=10)
+@click.option("--max-epochs", type=int, help="Max epochs.", default=100)
+@click.option("--out-timesteps", type=int, help="Number of output timesteps.", default=12)
+@click.option("--no-te", type=bool, is_flag=True, help="Disable 'TE'.", default=False)
+@click.option("--eval", type=bool, is_flag=True, help="Evaluation mode.", default=False)
 def main(data, **kwargs):
     # load data.
     data_loaders = load_data(
