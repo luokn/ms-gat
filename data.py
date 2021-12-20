@@ -6,7 +6,6 @@
 # @Date    : 2021/06/02
 # @Time    : 17:07:20
 
-from typing import List, Tuple
 
 import numpy as np
 import torch
