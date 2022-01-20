@@ -35,7 +35,7 @@ def to_list(ctx, param, value):
 @option("-o", "--out-dir", type=str, help="Output directory.", default="checkpoints")
 @option("-i", "--in-hours", type=str, callback=to_list, help="Input hours.", default="1,2,3,24,168")
 @option("-b", "--batch-size", type=int, help="Batch size.", default=64)
-@option("-j", "--num-workers", type=int, help="Number of 'DataLoader' workers.", default=0)
+@option("-w", "--num-workers", type=int, help="Number of 'DataLoader' workers.", default=0)
 @option("--model", type=str, help="Model name.", default="ms-gat")
 @option("--delta", type=float, help="Delta of 'HuberLoss'.", default=50)
 @option("--gpu-ids", type=str, help="GPUs.", default="0")
