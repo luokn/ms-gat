@@ -8,12 +8,8 @@ RUN pip3 install numpy click pyyaml
 
 RUN pip3 install torch==1.10.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 
-WORKDIR /
-
-RUN git clone https://github.com/luokn/ms-gat
-
 WORKDIR /ms-gat
 
-COPY ./data /ms-gat/data
+COPY ./ /ms-gat/
 
 ENTRYPOINT ["python3", "src/main.py"]
