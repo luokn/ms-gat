@@ -9,17 +9,17 @@
 
 from pathlib import Path
 from time import localtime, strftime
-from typing import Tuple
+from typing import Optional, Tuple
 
-import click
 import torch
+from click import echo, progressbar
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn import Module
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
-from models.loss import HuberLoss
+from models import HuberLoss
 
 
 class Engine:
@@ -31,15 +31,13 @@ class Engine:
             self.out_dir.mkdir(parents=True)
         self.log_file = self.out_dir / "run.log"
 
-    def _run_once(self, data_loader: DataLoader, mode, epoch, gpu_id):
+    def _run_once(self, data: DataLoader, mode: str, epoch: int, gpu_id: Optional[int]):
         self.model.train(mode == "train")
         with torch.set_grad_enabled(mode == "train"):
             labels = {"train": "[Train   ]", "validate": "[Validate]", "evaluate": "[Evaluate]"}
             L_acc, L_ave, metrics = 0.0, 0.0, Metrics()
-            with click.progressbar(
-                length=len(data_loader), label=labels[mode], item_show_func=self.__show_item, width=25
-            ) as bar:
-                for batch_idx, batch_data in enumerate(data_loader):
+            with progressbar(length=len(data), label=labels[mode], item_show_func=self.__show_item, width=25) as bar:
+                for batch_idx, batch_data in enumerate(data):
                     batch_data = [tensor.cuda(gpu_id) for tensor in batch_data]
                     inputs, truth = batch_data[:-1], batch_data[-1]
                     with autocast():
@@ -66,7 +64,7 @@ class Engine:
         with open(self.log_file, "a") as f:
             f.write(strftime("%Y/%m/%d %H:%M:%S", localtime()))
             f.write(" - ")
-            f.write(" - ".join([f"{arg}" for arg in args]))
+            f.write(" - ".join([f"{i}" for i in args]))
             f.write(" - ")
             f.write(",".join([f"{k}={v}" for k, v in kwargs.items()]))
             f.write("\n")
@@ -91,9 +89,9 @@ class Trainer(Engine):
         self.epoch = 1
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
 
-    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu_id):
+    def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu_id=None):
         while self.epoch <= self.max_epochs:
-            click.echo(f"Epoch {self.epoch}")
+            echo(f"Epoch {self.epoch}")
             self._run_once(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
             loss = self._run_once(data_loaders[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
             self.scheduler.step()
@@ -105,11 +103,11 @@ class Trainer(Engine):
                     break  # early stop.
             self.epoch += 1
 
-    def eval(self, data_loader: DataLoader, gpu_id):
+    def eval(self, data_loader: DataLoader, gpu_id=None):
         self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
     def save(self, ckpt):
-        click.echo(f"• Save checkpoint {ckpt}")
+        echo(f"• Save checkpoint {ckpt}")
         states = dict(
             best=self.best,
             epoch=self.epoch,
@@ -121,7 +119,7 @@ class Trainer(Engine):
         torch.save(states, ckpt)
 
     def load(self, ckpt):
-        click.echo(f"• Load checkpoint {ckpt}")
+        echo(f"• Load checkpoint {ckpt}")
         states = torch.load(ckpt)
         self.best = states["best"]
         self.epoch = states["epoch"] + 1
@@ -137,8 +135,8 @@ class Evaluator(Engine):
         states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
-    def eval(self, data_loader: DataLoader, gpu_id):
-        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
+    def eval(self, data: DataLoader, gpu_id=None):
+        self._run_once(data, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
 
 class Metrics:

@@ -1,6 +1,6 @@
-__pycache__/
-
 .vscode
+
 checkpoints
-data
-scripts
+data/pems*
+
+__pycache__
