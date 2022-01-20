@@ -26,19 +26,19 @@
 
         ```sh
         # PEMSD3
-        python3 main.py -d pemsd3 -o checkpoints/pemsd3 -i 1,2,3,24 -w 8
+        python3 src/main.py -d pemsd3 -o checkpoints/pemsd3 -i 1,2,3,24 -w 8
         # PEMSD4
-        python3 main.py -d pemsd4 -o checkpoints/pemsd4 -w 8
+        python3 src/main.py -d pemsd4 -o checkpoints/pemsd4 -w 8
         # PEMSD7
-        python3 main.py -d pemsd7 -o checkpoints/pemsd7 -b 32 -w 8
+        python3 src/main.py -d pemsd7 -o checkpoints/pemsd7 -b 32 -w 8
         # PEMSD8
-        python3 main.py -d pemsd8 -o checkpoints/pemsd8 -w 8
+        python3 src/main.py -d pemsd8 -o checkpoints/pemsd8 -w 8
         ```
 
 2.  _Evaluate_
 
     ```sh
-    python3 main.py -d pemsd4 -o checkpoints/pemsd4 -c checkpoints/pemsd4/xxx.pkl --eval
+    python3 src/main.py --eval -d pemsd4 -o checkpoints/pemsd4 -c checkpoints/pemsd4/xxx.pkl
     ```
 
 **Checkpoints**
