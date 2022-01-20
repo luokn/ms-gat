@@ -6,7 +6,7 @@ RUN apt update && apt install python3-pip git -y
 
 RUN pip3 install numpy click pyyaml
 
-RUN pip3 install torch==1.10.1+cu113-f https://download.pytorch.org/whl/cu113/torch_stable.html
+RUN pip3 install torch==1.10.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 
 WORKDIR /
 
