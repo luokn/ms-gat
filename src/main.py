@@ -9,41 +9,41 @@
 
 import os
 
-import click
-import yaml
+from click import command, echo, option
 from torch import cuda, nn
+from yaml import safe_load
 
+from core import Evaluator, Trainer
 from data import load_adj, load_data
-from engine import Evaluator, Trainer
-from models import msgat
+from models import msgat48, msgat72, msgat96
 
-models = {"ms-gat": msgat.msgat72, "ms-gat48": msgat.msgat48, "ms-gat72": msgat.msgat72, "ms-gat96": msgat.msgat96}
+models = {"ms-gat": msgat72, "ms-gat48": msgat48, "ms-gat72": msgat72, "ms-gat96": msgat96}
 
 
-def open_data(ctx, param, value):
-    with open("data.yaml", "r") as f:
-        return yaml.load(f, Loader=yaml.CLoader)[value]
+def load_meta(ctx, param, value):
+    with open("data/meta.yaml", "r") as f:
+        return safe_load(f)[value]
 
 
 def to_list(ctx, param, value):
     return [int(i) for i in value.split(",")]
 
 
-@click.command()
-@click.option("-d", "--data", type=str, callback=open_data, help="Dataset name.", required=True)
-@click.option("-c", "--ckpt", type=str, help="Checkpoint file.", default=None)
-@click.option("-o", "--out-dir", type=str, help="Output directory.", default="checkpoints")
-@click.option("-i", "--in-hours", type=str, callback=to_list, help="Input hours.", default="1,2,3,24,168")
-@click.option("-b", "--batch-size", type=int, help="Batch size.", default=64)
-@click.option("-j", "--num-workers", type=int, help="Number of 'DataLoader' workers.", default=0)
-@click.option("--model", type=str, help="Model name.", default="ms-gat")
-@click.option("--delta", type=float, help="Delta of 'HuberLoss'.", default=50)
-@click.option("--gpu-ids", type=str, help="GPUs.", default="0")
-@click.option("--min-epochs", type=int, help="Min epochs.", default=10)
-@click.option("--max-epochs", type=int, help="Max epochs.", default=100)
-@click.option("--out-timesteps", type=int, help="Number of output timesteps.", default=12)
-@click.option("--no-te", type=bool, is_flag=True, help="Disable 'TE'.", default=False)
-@click.option("--eval", type=bool, is_flag=True, help="Evaluation mode.", default=False)
+@command()
+@option("-d", "--data", type=str, callback=load_meta, help="Dataset name.", required=True)
+@option("-c", "--ckpt", type=str, help="Checkpoint file.", default=None)
+@option("-o", "--out-dir", type=str, help="Output directory.", default="checkpoints")
+@option("-i", "--in-hours", type=str, callback=to_list, help="Input hours.", default="1,2,3,24,168")
+@option("-b", "--batch-size", type=int, help="Batch size.", default=64)
+@option("-j", "--num-workers", type=int, help="Number of 'DataLoader' workers.", default=0)
+@option("--model", type=str, help="Model name.", default="ms-gat")
+@option("--delta", type=float, help="Delta of 'HuberLoss'.", default=50)
+@option("--gpu-ids", type=str, help="GPUs.", default="0")
+@option("--min-epochs", type=int, help="Min epochs.", default=10)
+@option("--max-epochs", type=int, help="Max epochs.", default=100)
+@option("--out-timesteps", type=int, help="Number of output timesteps.", default=12)
+@option("--no-te", type=bool, is_flag=True, help="Disable 'TE'.", default=False)
+@option("--eval", type=bool, is_flag=True, help="Evaluation mode.", default=False)
 def main(data, **kwargs):
     # load data.
     data_loaders = load_data(
@@ -75,7 +75,7 @@ def main(data, **kwargs):
             ckpt=kwargs["ckpt"],
             delta=kwargs["delta"],
         )
-        evaluator.eval(data_loaders[-1], gpu_id=None)
+        evaluator.eval(data_loaders[-1])
     else:  # train.
         trainer = Trainer(
             model,
@@ -92,10 +92,10 @@ def main(data, **kwargs):
         )
         if kwargs["ckpt"] is not None:
             trainer.load(kwargs["ckpt"])
-        trainer.fit(data_loaders[0:2], gpu_id=None)
-        click.echo("Training completed!")
+        trainer.fit(data_loaders[0:2])
+        echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
-        trainer.eval(data_loaders[-1], gpu_id=None)
+        trainer.eval(data_loaders[-1])
 
 
 if __name__ == "__main__":

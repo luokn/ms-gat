@@ -1,0 +1,34 @@
+pemsd3:
+    adj-file: data/pemsd3.csv
+    data-file: data/pemsd3.npz
+    num-nodes: 358
+    num-channels: 1
+    timesteps-per-hour: 12
+
+pemsd4:
+    adj-file: data/pemsd4.csv
+    data-file: data/pemsd4.npz
+    num-nodes: 307
+    num-channels: 3
+    timesteps-per-hour: 12
+
+pemsd7:
+    adj-file: data/pemsd7.csv
+    data-file: data/pemsd7.npz
+    num-nodes: 883
+    num-channels: 1
+    timesteps-per-hour: 12
+
+pemsd8:
+    adj-file: data/pemsd8.csv
+    data-file: data/pemsd8.npz
+    num-nodes: 170
+    num-channels: 3
+    timesteps-per-hour: 12
+
+pemsd-bay:
+    adj-file: data/pemsd-bay.csv
+    data-file: data/pemsd-bay.npz
+    num-nodes: 325
+    num-channels: 1
+    timesteps-per-hour: 12
