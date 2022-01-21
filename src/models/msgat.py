@@ -14,7 +14,7 @@ from torch import nn
 from torch.nn import init
 
 from .att import ChannelAttention, GraphAttention, TemporalAttention
-from .ebd import TE
+from .ebd import TimeEmbedding
 
 
 class GACN(nn.Module):
@@ -185,7 +185,7 @@ class MSGAT(nn.Module):
     def __init__(self, components: List[dict], in_timesteps: int, out_timesteps: int, use_te: bool, adj: torch.Tensor):
         super(MSGAT, self).__init__()
         if use_te:
-            self.te = TE(len(components), len(adj), out_timesteps)
+            self.te = TimeEmbedding(len(components), len(adj), out_timesteps)
         else:
             self.W = nn.Parameter(torch.Tensor(len(components), len(adj), out_timesteps), requires_grad=True)
         self.adj = nn.Parameter(adj, requires_grad=False)
