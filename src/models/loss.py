@@ -50,7 +50,7 @@ def huber_loss(output: torch.Tensor, target: torch.Tensor, delta=1.0) -> torch.T
     Returns:
         torch.Tensor: loss
     """
-    l1, l2 = delta * torch.abs(output - target) - delta**2 / 2, (output - target)**2 / 2
+    l1, l2 = delta * torch.abs(output - target) - delta ** 2 / 2, (output - target) ** 2 / 2
     return torch.where(torch.abs(output - target) <= delta, l2, l1).mean()
 
 
@@ -71,7 +71,7 @@ class GaussLoss(nn.Module):
         return gauss_loss(output, target, self.sigma, self.delta)
 
     def extra_repr(self) -> str:
-        return f'sigma={self.sigma}, delta={self.delta}'
+        return f"sigma={self.sigma}, delta={self.delta}"
 
 
 def gauss_loss(output: torch.Tensor, target: torch.Tensor, sigma=1.0, delta=5e-2) -> torch.Tensor:
@@ -94,4 +94,4 @@ def gauss_loss(output: torch.Tensor, target: torch.Tensor, sigma=1.0, delta=5e-2
         torch.Tensor: loss
     """
     abs = torch.abs(output - target)
-    return sigma**2 * torch.mean(1 - torch.exp(-abs**2 / (2 * sigma**2))) + delta * torch.mean(abs)
+    return sigma ** 2 * torch.mean(1 - torch.exp(-(abs ** 2) / (2 * sigma ** 2))) + delta * torch.mean(abs)
