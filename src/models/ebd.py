@@ -11,7 +11,7 @@ import torch
 from torch import nn
 
 
-class TE(nn.Module):
+class TimeEmbedding(nn.Module):
     """
     Time Embedding.
 
@@ -27,7 +27,7 @@ class TE(nn.Module):
     """
 
     def __init__(self, n_components: int, n_nodes: int, n_timesteps: int):
-        super(TE, self).__init__()
+        super(TimeEmbedding, self).__init__()
         self.n_components, self.n_nodes, self.n_timesteps = n_components, n_nodes, n_timesteps
         self.d_ebd = nn.Embedding(7, n_components * n_nodes * n_timesteps)
         self.h_ebd = nn.Embedding(24, n_components * n_nodes * n_timesteps)
