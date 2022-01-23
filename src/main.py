@@ -71,7 +71,7 @@ def main(data, **kwargs):
     if kwargs["eval"]:  # evaluate.
         evaluator = Evaluator(
             model,
-            kwargs["out_dir"],
+            out_dir=kwargs["out_dir"],
             ckpt=kwargs["ckpt"],
             delta=kwargs["delta"],
         )
