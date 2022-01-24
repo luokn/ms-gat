@@ -14,15 +14,10 @@ from torch import cuda, nn
 from yaml import safe_load
 
 from core import Evaluator, Trainer
-from data import load_adj, load_data
+from data import DataForMSGAT
 from models import msgat48, msgat72, msgat96
 
 models = {"ms-gat": msgat72, "ms-gat48": msgat48, "ms-gat72": msgat72, "ms-gat96": msgat96}
-
-
-def load_meta(ctx, param, value):
-    with open("data/meta.yaml", "r") as f:
-        return safe_load(f)[value]
 
 
 def to_list(ctx, param, value):
@@ -30,7 +25,7 @@ def to_list(ctx, param, value):
 
 
 @command()
-@option("-d", "--data", type=str, callback=load_meta, help="Dataset name.", required=True)
+@option("-d", "--data", type=str, help="Dataset name.", required=True)
 @option("-c", "--ckpt", type=str, help="Checkpoint file.", default=None)
 @option("-o", "--out-dir", type=str, help="Output directory.", default="checkpoints")
 @option("-i", "--in-hours", type=str, callback=to_list, help="Input hours.", default="1,2,3,24,168")
@@ -44,11 +39,10 @@ def to_list(ctx, param, value):
 @option("--out-timesteps", type=int, help="Number of output timesteps.", default=12)
 @option("--no-te", type=bool, is_flag=True, help="Disable 'TE'.", default=False)
 @option("--eval", type=bool, is_flag=True, help="Evaluation mode.", default=False)
-def main(data, **kwargs):
+def main(**kwargs):
     # load data.
-    data_loaders = load_data(
-        data_file=data["data-file"],
-        timesteps_per_hour=data["timesteps-per-hour"],
+    data = DataForMSGAT(
+        name=kwargs["data"],
         in_hours=kwargs["in_hours"],
         out_timesteps=kwargs["out_timesteps"],
         batch_size=kwargs["batch_size"],
@@ -57,11 +51,11 @@ def main(data, **kwargs):
     # create model.
     model = models[kwargs["model"]](
         n_components=len(kwargs["in_hours"]),
-        in_channels=data["num-channels"],
-        in_timesteps=data["timesteps-per-hour"],
+        in_channels=data.num_channels,
+        in_timesteps=data.timesteps_per_hour,
         out_timesteps=kwargs["out_timesteps"],
         use_te=not kwargs["no_te"],
-        adj=load_adj(data["adj-file"], data["num-nodes"]),
+        adj=data.adj,
     )
     # enable cuda.
     os.environ["CUDA_VISIBLE_DEVICES"] = kwargs["gpu_ids"]
@@ -75,7 +69,7 @@ def main(data, **kwargs):
             ckpt=kwargs["ckpt"],
             delta=kwargs["delta"],
         )
-        evaluator.eval(data_loaders[-1])
+        evaluator.eval(data.evaluation)
     else:  # train.
         trainer = Trainer(
             model,
@@ -92,10 +86,10 @@ def main(data, **kwargs):
         )
         if kwargs["ckpt"] is not None:
             trainer.load(kwargs["ckpt"])
-        trainer.fit(data_loaders[0:2])
+        trainer.fit(data.training, data.validation)
         echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
-        trainer.eval(data_loaders[-1])
+        trainer.eval(data.evaluation)
 
 
 if __name__ == "__main__":
