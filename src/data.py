@@ -85,7 +85,7 @@ class DataForMSGAT:
                     normalized_data, data[0], interval, self.in_hours, self.out_timesteps, self.timesteps_per_hour
                 ),
                 self.batch_size,
-                shuffle=True,
+                shuffle=i == 0,
                 pin_memory=True,
                 num_workers=self.num_workers,
             )
