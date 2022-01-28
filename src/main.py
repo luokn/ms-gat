@@ -11,7 +11,6 @@ import os
 
 from click import command, echo, option
 from torch import cuda, nn
-from yaml import safe_load
 
 from core import Evaluator, Trainer
 from data import DataForMSGAT
