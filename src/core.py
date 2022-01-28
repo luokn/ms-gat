@@ -135,8 +135,8 @@ class Evaluator(Engine):
         states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
-    def eval(self, data: DataLoader, gpu_id=None):
-        self._run_once(data, mode="evaluate", epoch=None, gpu_id=gpu_id)
+    def eval(self, data_loader: DataLoader, gpu_id=None):
+        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
 
 
 class Metrics:

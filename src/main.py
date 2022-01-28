@@ -85,7 +85,7 @@ def main(**kwargs):
         )
         if kwargs["ckpt"] is not None:
             trainer.load(kwargs["ckpt"])
-        trainer.fit(data.training, data.validation)
+        trainer.fit((data.training, data.validation))
         echo("Training completed!")
         trainer.load(trainer.best["ckpt"])
         trainer.eval(data.evaluation)
