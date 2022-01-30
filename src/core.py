@@ -103,9 +103,6 @@ class Trainer(Engine):
                     break  # early stop.
             self.epoch += 1
 
-    def eval(self, data_loader: DataLoader, gpu_id=None):
-        self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
-
     def save(self, ckpt):
         echo(f"• Save checkpoint {ckpt}")
         states = dict(
