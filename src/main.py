@@ -35,9 +35,9 @@ def to_list(ctx, param, value):
 @option("--gpu-ids", type=str, help="GPUs.", default="0")
 @option("--min-epochs", type=int, help="Min epochs.", default=10)
 @option("--max-epochs", type=int, help="Max epochs.", default=100)
-@option("--out-timesteps", type=int, help="Number of output timesteps.", default=12)
+@option("--out-timesteps", type=int, help="Length of output timesteps.", default=12)
 @option("--no-te", type=bool, is_flag=True, help="Disable 'TE'.", default=False)
-@option("--eval", type=bool, is_flag=True, help="Evaluation mode.", default=False)
+@option("--eval", type=bool, is_flag=True, help="Evaluate only.", default=False)
 def main(**kwargs):
     # load data.
     data = DataForMSGAT(
@@ -61,15 +61,8 @@ def main(**kwargs):
     if cuda.device_count() > 1:
         model = nn.DataParallel(model)
     model.cuda()
-    if kwargs["eval"]:  # evaluate.
-        evaluator = Evaluator(
-            model,
-            out_dir=kwargs["out_dir"],
-            ckpt=kwargs["ckpt"],
-            delta=kwargs["delta"],
-        )
-        evaluator.eval(data.evaluation)
-    else:  # train.
+    # train.
+    if not kwargs["eval"]:
         trainer = Trainer(
             model,
             out_dir=kwargs["out_dir"],
@@ -87,8 +80,14 @@ def main(**kwargs):
             trainer.load(kwargs["ckpt"])
         trainer.fit((data.training, data.validation))
         echo("Training completed!")
-        trainer.load(trainer.best["ckpt"])
-        trainer.eval(data.evaluation)
+    # evaluate.
+    evaluator = Evaluator(
+        model,
+        out_dir=kwargs["out_dir"],
+        ckpt=kwargs["ckpt"] if kwargs["eval"] else trainer.best["ckpt"],
+        delta=kwargs["delta"],
+    )
+    evaluator.eval(data.evaluation)
 
 
 if __name__ == "__main__":
