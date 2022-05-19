@@ -11,11 +11,11 @@ from typing import List, Tuple
 
 import numpy as np
 import torch
+import yaml
 from torch.utils.data import DataLoader, Dataset
-from yaml import safe_load
 
 
-class DataForMSGAT:
+class DataLoaderForMSGAT:
     """
     Adjacency matrix and Training, validation, evaluation data loader for MS-GAT.
 
@@ -37,7 +37,7 @@ class DataForMSGAT:
         num_workers: int,
     ):
         with open("data/meta.yaml", "r") as f:
-            metadata = safe_load(f)[name]
+            metadata = yaml.safe_load(f)[name]
             self.adj_file = metadata["adj-file"]
             self.data_file = metadata["data-file"]
             self.num_nodes = metadata["num-nodes"]
