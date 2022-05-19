@@ -13,17 +13,17 @@ from typing import Optional, Tuple
 
 import torch
 from click import echo, progressbar
-from torch.cuda.amp import GradScaler, autocast
-from torch.nn import Module
-from torch.optim import Adam
-from torch.optim.lr_scheduler import StepLR
+from torch import nn, optim
+from torch.cuda import amp
+from torch.optim import lr_scheduler
 from torch.utils.data import DataLoader
 
-from models import HuberLoss
+from loss import HuberLoss
+from metrics import Metrics
 
 
 class Engine:
-    def __init__(self, model: Module, **kwargs):
+    def __init__(self, model: nn.Module, **kwargs):
         self.model = model
         self.loss_fn = HuberLoss(kwargs["delta"])
         self.out_dir = Path(kwargs["out_dir"])
@@ -40,7 +40,7 @@ class Engine:
                 for batch_idx, batch_data in enumerate(data):
                     batch_data = [tensor.cuda(gpu_id) for tensor in batch_data]
                     inputs, truth = batch_data[:-1], batch_data[-1]
-                    with autocast():
+                    with amp.autocast():
                         output = self.model(*inputs)
                         loss = self.loss_fn(output, truth)
                     if mode == "train":
@@ -78,11 +78,11 @@ class Engine:
 
 
 class Trainer(Engine):
-    def __init__(self, model: Module, **kwargs):
+    def __init__(self, model: nn.Module, **kwargs):
         super(Trainer, self).__init__(model, **kwargs)
-        self.optimizer = Adam(model.parameters(), lr=kwargs["lr"], weight_decay=kwargs["weight_decay"])
-        self.scheduler = StepLR(self.optimizer, step_size=kwargs["step_size"], gamma=kwargs["gamma"])
-        self.grad_scaler = GradScaler()
+        self.optimizer = optim.Adam(model.parameters(), lr=kwargs["lr"], weight_decay=kwargs["weight_decay"])
+        self.scheduler = lr_scheduler.StepLR(self.optimizer, step_size=kwargs["step_size"], gamma=kwargs["gamma"])
+        self.grad_scaler = amp.GradScaler()
         #
         self.patience, self.min_delta = kwargs["patience"], kwargs["min_delta"]
         self.max_epochs, self.min_epochs = kwargs["max_epochs"], kwargs["min_epochs"]
@@ -127,34 +127,10 @@ class Trainer(Engine):
 
 
 class Evaluator(Engine):
-    def __init__(self, model: Module, **kwargs):
+    def __init__(self, model: nn.Module, **kwargs):
         super(Evaluator, self).__init__(model, **kwargs)
         states = torch.load(kwargs["ckpt"])
         model.load_state_dict(states["model"])
 
     def eval(self, data_loader: DataLoader, gpu_id=None):
         self._run_once(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
-
-
-class Metrics:
-    """
-    Calculate ``MAE/MAPE/RMSE``.
-    """
-
-    def __init__(self, mask_value=0.0):
-        self.n, self.mask_value = 0, mask_value
-        self.AE, self.APE, self.SE, self.MAE, self.MAPE, self.RMSE = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
-
-    def update(self, prediction, truth):
-        self.n += truth.nelement()
-        # MAE
-        self.AE += torch.abs(prediction - truth).sum().item()
-        self.MAE = self.AE / self.n
-        # MAPE
-        mask = truth > self.mask_value
-        masked_prediction, masked_truth = prediction[mask], truth[mask]
-        self.APE += 100 * torch.abs((masked_prediction - masked_truth) / masked_truth).sum().item()
-        self.MAPE = self.APE / self.n
-        # RMSE
-        self.SE += torch.square(prediction - truth).sum().item()
-        self.RMSE = (self.SE / self.n) ** 0.5

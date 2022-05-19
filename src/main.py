@@ -12,8 +12,8 @@ import os
 from click import command, echo, option
 from torch import cuda, nn
 
-from core import Evaluator, Trainer
-from data import DataForMSGAT
+from data_loader import DataLoaderForMSGAT
+from engine import Evaluator, Trainer
 from models import msgat48, msgat72, msgat96
 
 models = {"ms-gat": msgat72, "ms-gat48": msgat48, "ms-gat72": msgat72, "ms-gat96": msgat96}
@@ -40,7 +40,7 @@ def to_list(ctx, param, value):
 @option("--eval", type=bool, is_flag=True, help="Evaluate only.", default=False)
 def main(**kwargs):
     # load data.
-    data = DataForMSGAT(
+    data = DataLoaderForMSGAT(
         name=kwargs["data"],
         in_hours=kwargs["in_hours"],
         out_timesteps=kwargs["out_timesteps"],

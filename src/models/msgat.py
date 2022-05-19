@@ -11,10 +11,9 @@ from typing import List
 
 import torch
 from torch import nn
-from torch.nn import init
 
-from .att import ChannelAttention, GraphAttention, TemporalAttention
-from .ebd import TimeEmbedding
+from .attention import ChannelAttention, GraphAttention, TemporalAttention
+from .embeddings import TimeEmbedding
 
 
 class GACN(nn.Module):
@@ -215,10 +214,10 @@ class MSGAT(nn.Module):
             if not param.requires_grad:
                 continue
             if param.ndim >= 2:
-                init.xavier_normal_(param)
+                nn.init.xavier_normal_(param)
             else:
                 f_out = param.size(0)
-                init.uniform_(param, -(f_out ** -0.5), f_out ** -0.5)
+                nn.init.uniform_(param, -(f_out**-0.5), f_out**-0.5)
 
 
 def msgat96(n_components: int, in_channels, **kwargs):
