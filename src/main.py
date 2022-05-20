@@ -9,7 +9,7 @@
 
 import os
 
-from click import command, echo, option
+import click
 from torch import cuda, nn
 
 from data_loader import DataLoaderForMSGAT
@@ -19,25 +19,25 @@ from models import msgat48, msgat72, msgat96
 models = {"ms-gat": msgat72, "ms-gat48": msgat48, "ms-gat72": msgat72, "ms-gat96": msgat96}
 
 
-def to_list(ctx, param, value):
+def tolist(ctx, param, value):
     return [int(i) for i in value.split(",")]
 
 
-@command()
-@option("-d", "--data", type=str, help="Dataset name.", required=True)
-@option("-c", "--ckpt", type=str, help="Checkpoint file.", default=None)
-@option("-o", "--out-dir", type=str, help="Output directory.", default="checkpoints")
-@option("-i", "--in-hours", type=str, callback=to_list, help="Input hours.", default="1,2,3,24,168")
-@option("-b", "--batch-size", type=int, help="Batch size.", default=64)
-@option("-w", "--num-workers", type=int, help="Number of 'DataLoader' workers.", default=0)
-@option("--model", type=str, help="Model name.", default="ms-gat")
-@option("--delta", type=float, help="Delta of 'HuberLoss'.", default=50)
-@option("--gpu-ids", type=str, help="GPUs.", default="0")
-@option("--min-epochs", type=int, help="Min epochs.", default=10)
-@option("--max-epochs", type=int, help="Max epochs.", default=100)
-@option("--out-timesteps", type=int, help="Length of output timesteps.", default=12)
-@option("--no-te", type=bool, is_flag=True, help="Disable 'TE'.", default=False)
-@option("--eval", type=bool, is_flag=True, help="Evaluate only.", default=False)
+@click.command()
+@click.option("-d", "--data", type=str, help="Dataset name.", required=True)
+@click.option("-c", "--ckpt", type=str, help="Checkpoint file.", default=None)
+@click.option("-o", "--out-dir", type=str, help="Output directory.", default="checkpoints")
+@click.option("-i", "--in-hours", type=str, callback=tolist, help="Input hours.", default="1,2,3,24,168")
+@click.option("-b", "--batch-size", type=int, help="Batch size.", default=64)
+@click.option("-w", "--num-workers", type=int, help="Number of 'DataLoader' workers.", default=0)
+@click.option("--model", type=str, help="Model name.", default="ms-gat")
+@click.option("--delta", type=float, help="Delta of 'HuberLoss'.", default=50)
+@click.option("--gpu-ids", type=str, help="GPUs.", default="0")
+@click.option("--min-epochs", type=int, help="Min epochs.", default=10)
+@click.option("--max-epochs", type=int, help="Max epochs.", default=100)
+@click.option("--out-timesteps", type=int, help="Length of output timesteps.", default=12)
+@click.option("--no-te", type=bool, is_flag=True, help="Disable 'TE'.", default=False)
+@click.option("--eval", type=bool, is_flag=True, help="Evaluate only.", default=False)
 def main(**kwargs):
     # load data.
     data = DataLoaderForMSGAT(
@@ -47,6 +47,7 @@ def main(**kwargs):
         batch_size=kwargs["batch_size"],
         num_workers=kwargs["num_workers"],
     )
+
     # create model.
     model = models[kwargs["model"]](
         n_components=len(kwargs["in_hours"]),
@@ -56,13 +57,16 @@ def main(**kwargs):
         use_te=not kwargs["no_te"],
         adj=data.adj,
     )
+
     # enable cuda.
     os.environ["CUDA_VISIBLE_DEVICES"] = kwargs["gpu_ids"]
     if cuda.device_count() > 1:
         model = nn.DataParallel(model)
     model.cuda()
-    # train.
+
+    # train or eval.
     if not kwargs["eval"]:
+        # train.
         trainer = Trainer(
             model,
             out_dir=kwargs["out_dir"],
@@ -79,7 +83,8 @@ def main(**kwargs):
         if kwargs["ckpt"] is not None:
             trainer.load(kwargs["ckpt"])
         trainer.fit((data.training, data.validation))
-        echo("Training completed!")
+        click.echo("Training completed!")
+
     # evaluate.
     evaluator = Evaluator(
         model,
