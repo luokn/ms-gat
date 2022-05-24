@@ -33,65 +33,40 @@ def tolist(ctx, param, value):
 @click.option("--model", type=str, help="Model name.", default="ms-gat")
 @click.option("--delta", type=float, help="Delta of 'HuberLoss'.", default=50)
 @click.option("--gpu-ids", type=str, help="GPUs.", default="0")
-@click.option("--min-epochs", type=int, help="Min epochs.", default=10)
-@click.option("--max-epochs", type=int, help="Max epochs.", default=100)
 @click.option("--out-timesteps", type=int, help="Length of output timesteps.", default=12)
 @click.option("--no-te", type=bool, is_flag=True, help="Disable 'TE'.", default=False)
 @click.option("--eval", type=bool, is_flag=True, help="Evaluate only.", default=False)
-def main(**kwargs):
+def main(data, ckpt, out_dir, in_hours, batch_size, num_workers, model, delta, gpu_ids, out_timesteps, no_te, eval):
     # load data.
-    data = DataLoaderForMSGAT(
-        name=kwargs["data"],
-        in_hours=kwargs["in_hours"],
-        out_timesteps=kwargs["out_timesteps"],
-        batch_size=kwargs["batch_size"],
-        num_workers=kwargs["num_workers"],
-    )
+    data = DataLoaderForMSGAT(data, in_hours, out_timesteps, batch_size, num_workers)
 
     # create model.
-    model = models[kwargs["model"]](
-        n_components=len(kwargs["in_hours"]),
+    model = models[model](
+        n_components=len(in_hours),
         in_channels=data.num_channels,
         in_timesteps=data.timesteps_per_hour,
-        out_timesteps=kwargs["out_timesteps"],
-        use_te=not kwargs["no_te"],
+        out_timesteps=out_timesteps,
+        use_te=not no_te,
         adj=data.adj,
     )
 
     # enable cuda.
-    os.environ["CUDA_VISIBLE_DEVICES"] = kwargs["gpu_ids"]
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_ids
     if cuda.device_count() > 1:
         model = nn.DataParallel(model)
     model.cuda()
 
     # train or eval.
-    if not kwargs["eval"]:
+    if not eval:
         # train.
-        trainer = Trainer(
-            model,
-            out_dir=kwargs["out_dir"],
-            max_epochs=kwargs["max_epochs"],
-            min_epochs=kwargs["min_epochs"],
-            delta=kwargs["delta"],
-            lr=1e-3,
-            weight_decay=1e-4,
-            patience=20,
-            min_delta=1e-4,
-            gamma=0.1,
-            step_size=30,
-        )
-        if kwargs["ckpt"] is not None:
-            trainer.load(kwargs["ckpt"])
+        trainer = Trainer(model, delta, out_dir)
+        if ckpt is not None:
+            trainer.load(ckpt)
         trainer.fit((data.training, data.validation))
         click.echo("Training completed!")
 
     # evaluate.
-    evaluator = Evaluator(
-        model,
-        out_dir=kwargs["out_dir"],
-        ckpt=kwargs["ckpt"] if kwargs["eval"] else trainer.best["ckpt"],
-        delta=kwargs["delta"],
-    )
+    evaluator = Evaluator(model, delta, out_dir, ckpt if eval else trainer.best["ckpt"])
     evaluator.eval(data.evaluation)
 
 
