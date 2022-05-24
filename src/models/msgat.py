@@ -220,7 +220,7 @@ class MSGAT(nn.Module):
                 nn.init.uniform_(param, -(f_out**-0.5), f_out**-0.5)
 
 
-def msgat96(n_components: int, in_channels, **kwargs):
+def msgat48(n_components: int, in_channels: int, **kwargs):
     return MSGAT([{"channels": [in_channels, 48, 48], "dilations": [[1, 2], [2, 4]]}] * n_components, **kwargs)
 
 
@@ -228,5 +228,5 @@ def msgat72(n_components: int, in_channels: int, **kwargs):
     return MSGAT([{"channels": [in_channels, 72, 72], "dilations": [[1, 2], [2, 4]]}] * n_components, **kwargs)
 
 
-def msgat48(n_components: int, in_channels: int, **kwargs):
+def msgat96(n_components: int, in_channels: int, **kwargs):
     return MSGAT([{"channels": [in_channels, 96, 96], "dilations": [[1, 1, 2, 2], [4, 4]]}] * n_components, **kwargs)

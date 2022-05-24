@@ -9,7 +9,7 @@
 
 from pathlib import Path
 from time import localtime, strftime
-from typing import Optional, Tuple
+from typing import Tuple
 
 import click
 import torch
@@ -30,16 +30,16 @@ class Engine:
         "evaluate": "[Evaluate]",
     }
 
-    def __init__(self, model: nn.Module, **kwargs):
+    def __init__(self, model: nn.Module, loss_delta: float, out_dir: str):
         self.model = model
-        self.loss_fn = HuberLoss(kwargs["delta"])
-        self.out_dir = Path(kwargs["out_dir"])
+        self.loss_fn, self.out_dir = HuberLoss(loss_delta), Path(out_dir)
 
+        # make sure the output directory exists.
         if not self.out_dir.exists():
             self.out_dir.mkdir(parents=True)
         self.log_file = self.out_dir / "run.log"
 
-    def run_epoch(self, data: DataLoader, epoch: int, gpu_id: Optional[int], mode: str = "train"):
+    def run_epoch(self, data: DataLoader, gpu_id=None, epoch=None, mode="train"):
         self.model.train(mode == "train")
         with torch.set_grad_enabled(mode == "train"):
             loss_acc, loss_ave, metrics = 0.0, 0.0, Metrics()
@@ -51,10 +51,12 @@ class Engine:
                     batch_data = [tensor.cuda(gpu_id) for tensor in batch_data]
                     inputs, truth = batch_data[:-1], batch_data[-1]
 
+                    # forward.
                     with amp.autocast():
                         pred = self.model(*inputs)
                         loss = self.loss_fn(pred, truth)
 
+                    # backward.
                     if mode == "train":
                         self.optimizer.zero_grad()
                         self.grad_scaler.scale(loss).backward()
@@ -67,6 +69,8 @@ class Engine:
 
                     # metrics.
                     metrics.update(pred, truth)
+
+                    # progress bar.
                     pbar.update(n_steps=1, current_item=(loss_ave, metrics))
 
             stats = {"loss": loss_ave, "MAE": metrics.MAE, "MAPE": metrics.MAPE, "RMSE": metrics.RMSE}
@@ -97,33 +101,35 @@ class Engine:
 
 
 class Trainer(Engine):
-    def __init__(self, model: nn.Module, **kwargs):
-        super(Trainer, self).__init__(model, **kwargs)
-        self.optimizer = optim.Adam(model.parameters(), lr=kwargs["lr"], weight_decay=kwargs["weight_decay"])
-        self.scheduler = lr_scheduler.StepLR(self.optimizer, step_size=kwargs["step_size"], gamma=kwargs["gamma"])
-
+    def __init__(self, model: nn.Module, loss_delta: float, out_dir: str):
+        super(Trainer, self).__init__(model, loss_delta=loss_delta, out_dir=out_dir)
+        self.optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-4)
+        self.scheduler = lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.1)
         self.grad_scaler = amp.GradScaler()
 
-        self.patience, self.min_delta = kwargs["patience"], kwargs["min_delta"]
-        self.max_epochs, self.min_epochs = kwargs["max_epochs"], kwargs["min_epochs"]
-
-        self.epoch = 1
         self.best = {"epoch": 0, "loss": float("inf"), "ckpt": ""}
+        self.epoch = 1
+        self.patience, self.min_delta = 20, 1e-4
+        self.max_epochs, self.min_epochs = 100, 20
 
     def fit(self, data_loaders: Tuple[DataLoader, DataLoader], gpu_id=None):
         while self.epoch <= self.max_epochs:
             click.echo(f"Epoch {self.epoch}")
 
-            self.run_epoch(data_loaders[0], mode="train", epoch=self.epoch, gpu_id=gpu_id)
-            loss = self.run_epoch(data_loaders[1], mode="validate", epoch=self.epoch, gpu_id=gpu_id)
+            self.run_epoch(data_loaders[0], gpu_id=gpu_id, epoch=self.epoch, mode="train")
+            loss = self.run_epoch(data_loaders[1], gpu_id=gpu_id, epoch=self.epoch, mode="validate")
 
             self.scheduler.step()
+
             if self.epoch > self.min_epochs:
                 if loss < (1 - self.min_delta) * self.best["loss"]:
+                    # save model.
                     self.best = dict(epoch=self.epoch, loss=loss, ckpt=self.out_dir / f"{self.epoch}_{loss:.2f}.pkl")
                     self.save(ckpt=self.best["ckpt"])
+
                 elif self.epoch > self.best["epoch"] + self.patience:
-                    break  # early stop.
+                    # early stop.
+                    break
             self.epoch += 1
 
     def save(self, ckpt):
@@ -152,10 +158,10 @@ class Trainer(Engine):
 
 
 class Evaluator(Engine):
-    def __init__(self, model: nn.Module, **kwargs):
-        super(Evaluator, self).__init__(model, **kwargs)
-        states = torch.load(kwargs["ckpt"])
+    def __init__(self, model: nn.Module, delta: float, out_dir: str, ckpt: str):
+        super(Evaluator, self).__init__(model, loss_delta=delta, out_dir=out_dir)
+        states = torch.load(ckpt)
         model.load_state_dict(states["model"])
 
     def eval(self, data_loader: DataLoader, gpu_id=None):
-        self.run_epoch(data_loader, mode="evaluate", epoch=None, gpu_id=gpu_id)
+        self.run_epoch(data_loader, gpu_id=gpu_id, mode="evaluate")

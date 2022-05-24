@@ -1,3 +1,11 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# @File  : metrics.py
+# @Time  : 2022/05/24 10:27:02
+# @Author: Kun Luo
+# @Email : olooook@outlook.com
+
+
 import torch
 
 
@@ -12,14 +20,17 @@ class Metrics:
 
     def update(self, y_pred, y_true):
         self.n += y_true.nelement()
+
         # MAE
         self.AE += torch.abs(y_pred - y_true).sum().item()
         self.MAE = self.AE / self.n
+
         # MAPE
         mask = y_true > self.mask_value
         masked_prediction, masked_truth = y_pred[mask], y_true[mask]
         self.APE += 100 * torch.abs((masked_prediction - masked_truth) / masked_truth).sum().item()
         self.MAPE = self.APE / self.n
+
         # RMSE
         self.SE += torch.square(y_pred - y_true).sum().item()
         self.RMSE = (self.SE / self.n) ** 0.5
