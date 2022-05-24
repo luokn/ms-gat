@@ -38,7 +38,7 @@
 2.  _Evaluate_
 
     ```sh
-    python3 src/main.py --eval -d pemsd4 -o checkpoints/pemsd4 -c checkpoints/pemsd4/xxx.pkl
+    python3 src/main.py --eval -d pemsd4 -o checkpoints/pemsd4 -c checkpoints/pemsd4/xx_xxx.xx.pkl
     ```
 
 3.  _Citation_
