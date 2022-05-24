@@ -1,4 +1,4 @@
-<h2 align="center">Multi-relational Graph Attention Networks for Traffic Signal Coupling Learning and Prediction</h2>
+<h2 align="center">Learning Multiaspect Traffic Couplings by Multirelational Graph Attention Networks for Traffic Prediction</h2>
 
 **Data**
 
@@ -39,6 +39,21 @@
 
     ```sh
     python3 src/main.py --eval -d pemsd4 -o checkpoints/pemsd4 -c checkpoints/pemsd4/xxx.pkl
+    ```
+
+3.  _Citation_
+
+    ```tex
+    @ARTICLE{9780244,
+        author    ={Huang, Jing and Luo, Kun and Cao, Longbing and Wen, Yuanqiao and Zhong, Shuyuan},
+        journal   ={IEEE Transactions on Intelligent Transportation Systems},
+        title     ={Learning Multiaspect Traffic Couplings by Multirelational Graph Attention Networks for Traffic Prediction},
+        year      ={2022},
+        volume    ={},
+        number    ={},
+        pages     ={1-15},
+        doi       ={10.1109/TITS.2022.3173689}
+    }
     ```
 
 **Checkpoints**
