@@ -41,9 +41,16 @@
     python3 src/main.py --eval -d pemsd4 -o checkpoints/pemsd4 -c checkpoints/pemsd4/xx_xxx.xx.pkl
     ```
 
-3.  _Citation_
+**Checkpoints**
 
-    ```tex
+-   PEMSD3: [_MAE = 15.60 MAPE = 16.36% RMSE = 26.36_](https://drive.google.com/file/d/16bUCaI4p23vTGdMOXRRT45TNqci7VLCi/view?usp=sharing)
+-   PEMSD4: [_MAE = 19.59 MAPE = 13.34% RMSE = 31.58_](https://drive.google.com/file/d/1i3H6GuqBvCOZ_DdPRReKECwb14zvQzY3/view?usp=sharing)
+-   PEMSD7: [_MAE = 20.44 MAPE = 8.85% RMSE = 34.11_](https://drive.google.com/file/d/1a9VdvFOaMGU9-JyeRlDUDlzjHdrsEKSr/view?usp=sharing)
+-   PEMSD8: [_MAE = 14.58 MAPE = 10.10% RMSE = 23.94_](https://drive.google.com/file/d/18_mJtL0G6KQZF8QxSLQu9THFg-h_46q-/view?usp=sharing)
+
+**Citation**
+
+```tex
     @ARTICLE{9780244,
         author    ={Huang, Jing and Luo, Kun and Cao, Longbing and Wen, Yuanqiao and Zhong, Shuyuan},
         journal   ={IEEE Transactions on Intelligent Transportation Systems},
@@ -54,11 +61,4 @@
         pages     ={1-15},
         doi       ={10.1109/TITS.2022.3173689}
     }
-    ```
-
-**Checkpoints**
-
--   PEMSD3: [_MAE = 15.60 MAPE = 16.36% RMSE = 26.36_](https://drive.google.com/file/d/16bUCaI4p23vTGdMOXRRT45TNqci7VLCi/view?usp=sharing)
--   PEMSD4: [_MAE = 19.59 MAPE = 13.34% RMSE = 31.58_](https://drive.google.com/file/d/1i3H6GuqBvCOZ_DdPRReKECwb14zvQzY3/view?usp=sharing)
--   PEMSD7: [_MAE = 20.44 MAPE = 8.85% RMSE = 34.11_](https://drive.google.com/file/d/1a9VdvFOaMGU9-JyeRlDUDlzjHdrsEKSr/view?usp=sharing)
--   PEMSD8: [_MAE = 14.58 MAPE = 10.10% RMSE = 23.94_](https://drive.google.com/file/d/18_mJtL0G6KQZF8QxSLQu9THFg-h_46q-/view?usp=sharing)
+```
