@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Author  : Kun Luo
-# @Email   : olooook@outlook.com
-# @File    : loss.py
-# @Date    : 2021/06/02
-# @Time    : 17:09:21
-
+# @File   : loss.py
+# @Data   : 2021/06/02
+# @Author : Luo Kun
+# @Contact: luokun485@gmail.com
 
 import torch
 from torch import nn
@@ -50,7 +48,7 @@ def huber_loss(output: torch.Tensor, target: torch.Tensor, delta=1.0) -> torch.T
     Returns:
         torch.Tensor: loss
     """
-    l1, l2 = delta * torch.abs(output - target) - delta ** 2 / 2, (output - target) ** 2 / 2
+    l1, l2 = delta * torch.abs(output - target) - delta**2 / 2, (output - target)**2 / 2
     return torch.where(torch.abs(output - target) <= delta, l2, l1).mean()
 
 
@@ -94,4 +92,4 @@ def gauss_loss(output: torch.Tensor, target: torch.Tensor, sigma=1.0, delta=5e-2
         torch.Tensor: loss
     """
     abs = torch.abs(output - target)
-    return sigma ** 2 * torch.mean(1 - torch.exp(-(abs ** 2) / (2 * sigma ** 2))) + delta * torch.mean(abs)
+    return sigma**2 * torch.mean(1 - torch.exp(-(abs**2) / (2 * sigma**2))) + delta * torch.mean(abs)

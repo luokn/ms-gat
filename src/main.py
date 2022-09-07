@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Author  : Kun Luo
-# @Email   : olooook@outlook.com
-# @File    : main.py
-# @Date    : 2021/06/02
-# @Time    : 17:05:00
-
+# @File   : main.py
+# @Data   : 2021/06/02
+# @Author : Luo Kun
+# @Contact: luokun485@gmail.com
 
 import os
 

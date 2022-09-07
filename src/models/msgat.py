@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Author  : Kun Luo
-# @Email   : olooook@outlook.com
-# @File    : ms_gat.py
-# @Date    : 2021/06/02
-# @Time    : 20:56:11
-
+# @File   : msgat.py
+# @Data   : 2021/06/02
+# @Author : Luo Kun
+# @Contact: luokun485@gmail.com
 
 from typing import List
 
@@ -17,6 +15,7 @@ from .embeddings import TimeEmbedding
 
 
 class GACN(nn.Module):
+
     def __init__(self, in_channels: int, out_channels: int, n_timesteps: int):
         super(GACN, self).__init__()
         self.in_channels, self.out_channels, self.n_timesteps = in_channels, out_channels, n_timesteps
@@ -49,13 +48,14 @@ class Chomp(nn.Module):
         self.chomp_size = chomp_size
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        return input[..., : -self.chomp_size]
+        return input[..., :-self.chomp_size]
 
     def extra_repr(self) -> str:
         return f"chomp_size={self.chomp_size}"
 
 
 class TACN(nn.Module):
+
     def __init__(self, in_channels: int, out_channels: int, n_nodes: int, dilations: List[int]):
         super(TACN, self).__init__()
         self.in_channels, self.out_channels, self.n_nodes, self.dilations = (
@@ -81,6 +81,7 @@ class TACN(nn.Module):
 
 
 class CACN(nn.Module):
+
     def __init__(self, in_channels: int, out_channels: int, n_nodes: int, n_timesteps: int):
         super(CACN, self).__init__()
         self.in_channels, self.out_channels, self.n_nodes, self.n_timesteps = (
@@ -89,9 +90,8 @@ class CACN(nn.Module):
             n_nodes,
             n_timesteps,
         )
-        self.seq = nn.Sequential(
-            ChannelAttention(n_nodes=n_nodes, n_timesteps=n_timesteps), nn.Conv2d(in_channels, out_channels, 1)
-        )
+        self.seq = nn.Sequential(ChannelAttention(n_nodes=n_nodes, n_timesteps=n_timesteps),
+                                 nn.Conv2d(in_channels, out_channels, 1))
 
     def forward(self, signals: torch.Tensor) -> torch.Tensor:
         return self.seq(signals)  # -> [batch_size, out_channels, n_nodes, n_timesteps]
@@ -101,6 +101,7 @@ class CACN(nn.Module):
 
 
 class MEAM(nn.Module):
+
     def __init__(self, in_channels: int, out_channels: int, n_nodes: int, n_timesteps: int, dilations: List[int]):
         assert out_channels % 3 == 0
         super(MEAM, self).__init__()
@@ -134,6 +135,7 @@ class MEAM(nn.Module):
 
 
 class TPC(nn.Module):
+
     def __init__(self, channels: List[int], n_nodes: int, in_timesteps: int, out_timesteps: int, dilations: List[int]):
         super(TPC, self).__init__()
         self.channels, self.n_nodes, self.in_timesteps, self.out_timesteps, self.dilations = (
@@ -143,12 +145,10 @@ class TPC(nn.Module):
             out_timesteps,
             dilations,
         )
-        self.tgacns = nn.ModuleList(
-            [
-                MEAM(channels[i], channels[i + 1], n_nodes=n_nodes, n_timesteps=in_timesteps, dilations=d)
-                for i, d in enumerate(dilations)
-            ]
-        )
+        self.tgacns = nn.ModuleList([
+            MEAM(channels[i], channels[i + 1], n_nodes=n_nodes, n_timesteps=in_timesteps, dilations=d)
+            for i, d in enumerate(dilations)
+        ])
         self.ln = nn.LayerNorm([in_timesteps])
         self.fc = nn.Conv2d(in_timesteps, out_timesteps, kernel_size=[1, channels[-1]])
 
@@ -188,18 +188,15 @@ class MSGAT(nn.Module):
         else:
             self.W = nn.Parameter(torch.Tensor(len(components), len(adj), out_timesteps), requires_grad=True)
         self.adj = nn.Parameter(adj, requires_grad=False)
-        self.tpcs = nn.ModuleList(
-            [
-                TPC(
-                    channels=component["channels"],
-                    n_nodes=len(adj),
-                    in_timesteps=in_timesteps,
-                    out_timesteps=out_timesteps,
-                    dilations=component["dilations"],
-                )
-                for component in components
-            ]
-        )
+        self.tpcs = nn.ModuleList([
+            TPC(
+                channels=component["channels"],
+                n_nodes=len(adj),
+                in_timesteps=in_timesteps,
+                out_timesteps=out_timesteps,
+                dilations=component["dilations"],
+            ) for component in components
+        ])
         self.reset_parameters()
 
     def forward(self, X: torch.Tensor, H: torch.Tensor, D: torch.Tensor) -> torch.Tensor:

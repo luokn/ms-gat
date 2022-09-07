@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Author  : Kun Luo
-# @Email   : olooook@outlook.com
-# @File    : embedding.py
-# @Date    : 2021/07/02
-# @Time    : 16:32:30
-
+# @File   : embeddings.py
+# @Data   : 2021/07/02
+# @Author : Luo Kun
+# @Contact: luokun485@gmail.com
 
 import torch
 from torch import nn
