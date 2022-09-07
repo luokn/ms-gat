@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Author  : Kun Luo
-# @Email   : olooook@outlook.com
-# @File    : trainer.py
-# @Date    : 2021/06/02
-# @Time    : 17:41:37
-
+# @File   : engine.py
+# @Data   : 2021/06/02
+# @Author : Luo Kun
+# @Contact: luokun485@gmail.com
 
 from pathlib import Path
 from time import localtime, strftime
@@ -44,9 +42,10 @@ class Engine:
         with torch.set_grad_enabled(mode == "train"):
             loss_acc, loss_ave, metrics = 0.0, 0.0, Metrics()
 
-            with click.progressbar(
-                length=len(data), label=self.__labels__[mode], item_show_func=self.__show_item, width=25
-            ) as pbar:
+            with click.progressbar(length=len(data),
+                                   label=self.__labels__[mode],
+                                   item_show_func=self.__show_item,
+                                   width=25) as pbar:
                 for batch_idx, batch_data in enumerate(data):
                     batch_data = [tensor.cuda(gpu_id) for tensor in batch_data]
                     inputs, truth = batch_data[:-1], batch_data[-1]
@@ -101,6 +100,7 @@ class Engine:
 
 
 class Trainer(Engine):
+
     def __init__(self, model: nn.Module, loss_delta: float, out_dir: str):
         super(Trainer, self).__init__(model, loss_delta=loss_delta, out_dir=out_dir)
         self.optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=5e-4)
@@ -158,6 +158,7 @@ class Trainer(Engine):
 
 
 class Evaluator(Engine):
+
     def __init__(self, model: nn.Module, delta: float, out_dir: str, ckpt: str):
         super(Evaluator, self).__init__(model, loss_delta=delta, out_dir=out_dir)
         states = torch.load(ckpt)

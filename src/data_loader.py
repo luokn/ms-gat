@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Author  : Kun Luo
-# @Email   : olooook@outlook.com
-# @File    : data.py
-# @Date    : 2021/06/02
-# @Time    : 17:07:20
-
+# @File   : data_loader.py
+# @Data   : 2021/06/02
+# @Author : Luo Kun
+# @Contact: luokun485@gmail.com
 
 from typing import List, Tuple
 
@@ -81,19 +79,18 @@ class DataLoaderForMSGAT:
         normalized_data = normalize(data, split=in_timesteps + split1)
         return [
             DataLoader(
-                TimeSeriesSlice(
-                    normalized_data, data[0], interval, self.in_hours, self.out_timesteps, self.timesteps_per_hour
-                ),
+                TimeSeriesSlice(normalized_data, data[0], interval, self.in_hours, self.out_timesteps,
+                                self.timesteps_per_hour),
                 self.batch_size,
                 shuffle=i == 0,
                 pin_memory=True,
                 num_workers=self.num_workers,
-            )
-            for i, interval in enumerate(intervals)
+            ) for i, interval in enumerate(intervals)
         ]
 
 
 class TimeSeriesSlice(Dataset):
+
     def __init__(
         self,
         inputs: torch.Tensor,
@@ -110,8 +107,8 @@ class TimeSeriesSlice(Dataset):
         t = torch.tensor(i + self.interval[0], dtype=torch.long)
         h = torch.div(t, self.tau, rounding_mode="trunc")
         d = torch.div(h, 24, rounding_mode="trunc")
-        x = torch.stack([self.inputs[..., (t - h * self.tau) : (t - h * self.tau + self.tau)] for h in self.hours])
-        y = self.target[..., t : (t + self.q)]
+        x = torch.stack([self.inputs[..., (t - h * self.tau):(t - h * self.tau + self.tau)] for h in self.hours])
+        y = self.target[..., t:(t + self.q)]
         return x, h % 24, d % 7, y
 
     def __len__(self):

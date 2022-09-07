@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @File  : metrics.py
-# @Time  : 2022/05/24 10:27:02
-# @Author: Kun Luo
-# @Email : olooook@outlook.com
-
+# @File   : metrics.py
+# @Data   : 2022/05/24
+# @Author : Luo Kun
+# @Contact: luokun485@gmail.com
 
 import torch
 
@@ -33,7 +32,7 @@ class Metrics:
 
         # RMSE
         self.SE += torch.square(y_pred - y_true).sum().item()
-        self.RMSE = (self.SE / self.n) ** 0.5
+        self.RMSE = (self.SE / self.n)**0.5
 
     def todict(self):
         return {"MAE": self.MAE, "MAPE": self.MAPE, "RMSE": self.RMSE}

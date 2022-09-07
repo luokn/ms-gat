@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Author  : Kun Luo
-# @Email   : olooook@outlook.com
-# @File    : attention.py
-# @Date    : 2021/07/02
-# @Time    : 16:29:55
-
+# @File   : attention.py
+# @Data   : 2021/07/02
+# @Author : Luo Kun
+# @Contact: luokun485@gmail.com
 
 import torch
 from torch import nn
