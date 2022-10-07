@@ -26,8 +26,8 @@ class Metrics:
 
         # MAPE
         mask = y_true > self.mask_value
-        masked_prediction, masked_truth = y_pred[mask], y_true[mask]
-        self.APE += 100 * torch.abs((masked_prediction - masked_truth) / masked_truth).sum().item()
+        masked_pred, masked_true = y_pred[mask], y_true[mask]
+        self.APE += 100 * torch.abs((masked_pred - masked_true) / masked_true).sum().item()
         self.MAPE = self.APE / self.n
 
         # RMSE
