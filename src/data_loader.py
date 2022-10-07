@@ -58,9 +58,9 @@ class DataLoaderForMSGAT:
         """
         A = torch.eye(self.num_nodes)
         for line in open(self.adj_file, "r").readlines()[1:]:
-            f, t, _ = line.split(",")
-            f, t = int(f), int(t)
-            A[f, t] = A[t, f] = 1
+            src, dst, _ = line.split(",")
+            src, dst = int(src), int(dst)
+            A[src, dst] = A[dst, src] = 1
 
         D_rsqrt = A.sum(dim=1).rsqrt().diag()
         return D_rsqrt @ A @ D_rsqrt
